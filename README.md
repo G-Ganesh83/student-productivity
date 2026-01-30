@@ -1,3 +1,40 @@
+## Requirements
+
+Ensure the following are installed on your system:
+
+- Node.js (v18 or above recommended)
+- npm (comes with Node.js)
+- Git
+
+Verify installation by running the following commands in terminal:
+
+node -v
+npm -v
+git --version
+
+## Steps to Run Locally
+
+1. Clone the repository
+
+git clone https://github.com/<your-username>/<your-repository-name>.git
+
+2. Navigate into the project directory
+
+cd <your-repository-name>
+
+3. Install project dependencies
+
+npm install
+
+4. Start the development server
+
+npm run dev
+
+5. Open the application in your browser
+
+http://localhost:5173
+
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
