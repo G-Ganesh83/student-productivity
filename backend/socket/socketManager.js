@@ -3,33 +3,41 @@ import jwt from 'jsonwebtoken';
 import Room from '../models/Room.js';
 import User from '../models/User.js';
 
-const emitSocketError = (socket, message) => {
-  socket.emit('error', { message });
+const emitSocketError = (socket, message, code) => {
+  socket.emit('socket-error', { message, code });
 };
 
-const getAuthorizedRoom = async (socket, roomId) => {
+async function validateRoomAccess(roomId, userId) {
   if (!roomId) {
-    emitSocketError(socket, 'Invalid room');
-    return null;
+    return { valid: false, error: 'Room ID is required', code: 'INVALID_INPUT' };
   }
 
   const room = await Room.findById(roomId);
 
   if (!room) {
-    emitSocketError(socket, 'Invalid room');
-    return null;
+    return { valid: false, error: 'Room not found', code: 'ROOM_NOT_FOUND' };
   }
 
   const isMember = room.members.some(
-    (member) => member.toString() === socket.user._id.toString()
+    (member) => member.toString() === userId.toString()
   );
 
   if (!isMember) {
-    emitSocketError(socket, 'Access denied');
-    return null;
+    return { valid: false, error: 'Access denied', code: 'UNAUTHORIZED' };
   }
 
-  return room;
+  return { valid: true };
+}
+
+const resolveRoomAccess = async (socket, roomId) => {
+  const result = await validateRoomAccess(roomId, socket.user._id);
+
+  if (!result.valid) {
+    emitSocketError(socket, result.error, result.code);
+    return false;
+  }
+
+  return true;
 };
 
 const initializeSocketManager = (io) => {
@@ -61,38 +69,52 @@ const initializeSocketManager = (io) => {
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.user._id.toString()}`);
 
-    socket.on('join-room', async ({ roomId }) => {
+    socket.on('join-room', async (payload = {}) => {
       try {
-        const room = await getAuthorizedRoom(socket, roomId);
+        const { roomId } = payload;
+        const hasAccess = await resolveRoomAccess(socket, roomId);
 
-        if (!room) {
+        if (!hasAccess) {
+          return;
+        }
+
+        if (socket.rooms.has(roomId)) {
           return;
         }
 
         socket.join(roomId);
-        console.log(`User ${socket.user.id} joined room ${roomId}`);
+        console.log(`[JOIN] user ${socket.user.id} -> room ${roomId}`);
 
         io.to(roomId).emit('user-joined', {
           userId: socket.user.id,
           roomId,
         });
       } catch (error) {
-        console.error(`join-room error: ${error.message}`);
-        emitSocketError(socket, 'Invalid room');
+        console.error('Socket Error:', error.message);
+        emitSocketError(socket, 'Failed to join room', 'INVALID_INPUT');
       }
     });
 
-    socket.on('send-message', async ({ roomId, message }) => {
+    socket.on('send-message', async (payload = {}) => {
       try {
+        const { roomId, message } = payload;
+
+        if (!roomId) {
+          emitSocketError(socket, 'Room ID is required', 'INVALID_INPUT');
+          return;
+        }
+
         if (!message?.trim()) {
           return;
         }
 
-        const room = await getAuthorizedRoom(socket, roomId);
+        const hasAccess = await resolveRoomAccess(socket, roomId);
 
-        if (!room) {
+        if (!hasAccess) {
           return;
         }
+
+        console.log(`[MSG] ${socket.user.id} in ${roomId}`);
 
         io.to(roomId).emit('receive-message', {
           userId: socket.user.id,
@@ -100,49 +122,76 @@ const initializeSocketManager = (io) => {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        console.error(`send-message error: ${error.message}`);
-        emitSocketError(socket, 'Failed to send message');
+        console.error('Socket Error:', error.message);
+        emitSocketError(socket, 'Failed to send message', 'INVALID_INPUT');
       }
     });
 
-    socket.on('code-change', async ({ roomId, code }) => {
+    socket.on('code-change', async (payload = {}) => {
       try {
-        const room = await getAuthorizedRoom(socket, roomId);
+        const { roomId, code } = payload;
 
-        if (!room) {
+        if (!roomId) {
+          emitSocketError(socket, 'Room ID is required', 'INVALID_INPUT');
           return;
         }
+
+        if (!code?.trim()) {
+          return;
+        }
+
+        const hasAccess = await resolveRoomAccess(socket, roomId);
+
+        if (!hasAccess) {
+          return;
+        }
+
+        console.log(`[CODE] ${socket.user.id} updated code in ${roomId}`);
 
         socket.to(roomId).emit('receive-code', {
           code,
           userId: socket.user.id,
         });
       } catch (error) {
-        console.error(`code-change error: ${error.message}`);
-        emitSocketError(socket, 'Failed to sync code');
+        console.error('Socket Error:', error.message);
+        emitSocketError(socket, 'Failed to sync code', 'INVALID_INPUT');
       }
     });
 
-    socket.on('sync-code', async ({ roomId, code }) => {
+    socket.on('sync-code', async (payload = {}) => {
       try {
-        const room = await getAuthorizedRoom(socket, roomId);
+        const { roomId, code } = payload;
 
-        if (!room) {
+        if (!roomId) {
+          emitSocketError(socket, 'Room ID is required', 'INVALID_INPUT');
           return;
         }
 
+        if (!code?.trim()) {
+          return;
+        }
+
+        const hasAccess = await resolveRoomAccess(socket, roomId);
+
+        if (!hasAccess) {
+          return;
+        }
+
+        console.log(`[CODE] ${socket.user.id} updated code in ${roomId}`);
+
         socket.to(roomId).emit('receive-code', {
           code,
+          userId: socket.user.id,
           isFullSync: true,
         });
       } catch (error) {
-        console.error(`sync-code error: ${error.message}`);
-        emitSocketError(socket, 'Failed to sync code');
+        console.error('Socket Error:', error.message);
+        emitSocketError(socket, 'Failed to sync code', 'INVALID_INPUT');
       }
     });
 
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${socket.user._id.toString()}`);
+      console.log(`[DISCONNECT] user ${socket.user?.id}`);
     });
   });
 };
