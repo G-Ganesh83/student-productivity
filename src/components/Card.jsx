@@ -1,19 +1,35 @@
-function Card({ children, className = "", onClick, variant = "default" }) {
-  const baseStyles = "bg-white rounded-2xl shadow-soft border border-gray-100/50 p-6 backdrop-blur-sm";
-  const clickableStyles = onClick ? "cursor-pointer hover-lift" : "";
-  
+function Card({ children, className = "", onClick, variant = "default", padding = "md" }) {
+  const base =
+    "rounded-2xl transition-all duration-200 bg-white border border-slate-100";
+
   const variants = {
-    default: "bg-white",
-    gradient: "bg-gradient-to-br from-white to-indigo-50/30",
-    glass: "glass border-gray-200/50"
+    default: "shadow-card",
+    elevated: "shadow-panel",
+    subtle: "bg-slate-50 shadow-none border-slate-200",
+    gradient: "bg-gradient-to-br from-white to-slate-50/80 shadow-card",
+    glass: "glass border-white/60 shadow-card",
+    brand: "gradient-brand-subtle border-brand-100 shadow-card",
   };
-  
+
+  const paddings = {
+    none: "",
+    sm: "p-4",
+    md: "p-6",
+    lg: "p-8",
+  };
+
+  const clickable = onClick
+    ? "cursor-pointer hover-lift hover:border-brand-100"
+    : "";
+
   return (
-    <div className={`${baseStyles} ${variants[variant]} ${clickableStyles} ${className}`} onClick={onClick}>
+    <div
+      className={`${base} ${variants[variant]} ${paddings[padding]} ${clickable} ${className}`}
+      onClick={onClick}
+    >
       {children}
     </div>
   );
 }
 
 export default Card;
-

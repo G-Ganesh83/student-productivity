@@ -11,256 +11,214 @@ import { dummyRooms } from "../data/dummyData";
 
 function Collaboration() {
   const navigate = useNavigate();
-  
-  // Load from localStorage or use dummy data
-  const loadRooms = () => {
+
+  const [rooms, setRooms] = useState(() => {
     const saved = localStorage.getItem("rooms");
     return saved ? JSON.parse(saved) : dummyRooms;
-  };
-
-  const [rooms, setRooms] = useState(loadRooms);
-
-  // Save to localStorage whenever rooms change
-  useEffect(() => {
-    localStorage.setItem("rooms", JSON.stringify(rooms));
-  }, [rooms]);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [createFormData, setCreateFormData] = useState({
-    name: "",
-    description: ""
   });
-  const [joinRoomId, setJoinRoomId] = useState("");
+
+  useEffect(() => { localStorage.setItem("rooms", JSON.stringify(rooms)); }, [rooms]);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ name: "", description: "" });
+  const [joinId, setJoinId] = useState("");
   const [formErrors, setFormErrors] = useState({});
   const [toasts, setToasts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const addToast = (message, type = "success") => {
     const id = Date.now();
-    setToasts([...toasts, { id, message, type }]);
+    setToasts((p) => [...p, { id, message, type }]);
   };
+  const removeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
 
-  const removeToast = (id) => {
-    setToasts(toasts.filter(toast => toast.id !== id));
-  };
+  const openCreate = () => { setCreateForm({ name: "", description: "" }); setFormErrors({}); setIsCreateOpen(true); };
+  const openJoin = () => { setJoinId(""); setIsJoinOpen(true); };
 
-  const handleCreateRoom = () => {
-    const errors = {};
-    if (!createFormData.name.trim()) {
-      errors.name = "Room name is required";
-    }
-    setFormErrors(errors);
-    
-    if (Object.keys(errors).length > 0) {
-      addToast("Please enter a room name", "error");
-      return;
-    }
+  const handleCreate = () => {
+    const errs = {};
+    if (!createForm.name.trim()) errs.name = "Room name is required";
+    setFormErrors(errs);
+    if (Object.keys(errs).length) return addToast("Please enter a room name", "error");
 
     setIsLoading(true);
-    
     setTimeout(() => {
-      const newRoom = {
+      const room = {
         id: `room-${Date.now()}`,
-        name: createFormData.name,
-        description: createFormData.description,
+        name: createForm.name,
+        description: createForm.description,
         participants: 1,
-        createdAt: new Date().toISOString().split('T')[0]
+        createdAt: new Date().toISOString().split("T")[0],
       };
-      setRooms([...rooms, newRoom]);
-      setCreateFormData({ name: "", description: "" });
-      setFormErrors({});
-      setIsCreateModalOpen(false);
+      setRooms((p) => [room, ...p]);
+      setCreateForm({ name: "", description: "" });
+      setIsCreateOpen(false);
       setIsLoading(false);
-      addToast("Room created successfully", "success");
-      navigate(`/room/${newRoom.id}`);
+      addToast("Room created!", "success");
+      navigate(`/room/${room.id}`);
     }, 300);
   };
-  
-  const handleJoinRoom = () => {
-    if (!joinRoomId.trim()) {
-      addToast("Please enter a room ID", "error");
-      return;
-    }
-    
+
+  const handleJoin = () => {
+    if (!joinId.trim()) return addToast("Please enter a room ID", "error");
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      addToast("Joining room...", "info");
-      navigate(`/room/${joinRoomId}`);
+      navigate(`/room/${joinId}`);
     }, 300);
   };
-  
-  const handleOpenCreateModal = () => {
-    setCreateFormData({ name: "", description: "" });
-    setFormErrors({});
-    setIsCreateModalOpen(true);
-  };
-  
-  const handleOpenJoinModal = () => {
-    setJoinRoomId("");
-    setIsJoinModalOpen(true);
-  };
-  
+
   return (
     <div className="space-y-6">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+
+      {/* ─── Header ──────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-2">
-            Collaboration
-          </h1>
-          <p className="text-lg text-gray-600">Create or join collaboration rooms</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Collaboration</h1>
+          <p className="text-slate-500 text-sm mt-1">Create or join rooms to code together</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleOpenJoinModal} size="lg">
+          <Button variant="secondary" onClick={openJoin}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
             Join Room
           </Button>
-          <Button onClick={handleOpenCreateModal} size="lg" className="shadow-lg">
-            <span className="mr-2">+</span> Create Room
+          <Button onClick={openCreate}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Create Room
           </Button>
         </div>
       </div>
-      
-      {/* Empty State */}
+
+      {/* ─── Empty State ─────────────────────── */}
       {rooms.length === 0 ? (
-        <Card variant="gradient" className="bg-gradient-to-br from-purple-50 to-pink-50 border-0">
-          <div className="text-center py-16">
-            <div className="text-7xl mb-6">👥</div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">No collaboration rooms yet</h3>
-            <p className="text-gray-600 mb-8 text-lg">Create your first room to start collaborating</p>
-            <Button onClick={handleOpenCreateModal} size="lg">
-              Create Your First Room
-            </Button>
+        <Card variant="brand" padding="lg">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-2xl gradient-brand flex items-center justify-center mx-auto mb-5 shadow-button">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">No rooms yet</h3>
+            <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">Create your first collaboration room and invite your team</p>
+            <Button onClick={openCreate} size="lg">Create Your First Room</Button>
           </div>
         </Card>
       ) : (
-        /* Rooms Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {rooms.map((room) => (
-          <Card
-            key={room.id}
-            onClick={() => navigate(`/room/${room.id}`)}
-            variant="gradient"
-            className="bg-gradient-to-br from-white to-purple-50/30 border-0 hover-lift cursor-pointer group"
-          >
-            <div className="relative">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full -mr-10 -mt-10"></div>
-              
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors flex-1 pr-2">
-                  {room.name}
-                </h3>
-                <Badge variant="primary" className="shadow-sm">
-                  {room.participants} members
-                </Badge>
-              </div>
-              
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">{room.description}</p>
-              
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <p className="text-xs font-semibold text-gray-500">
-                  📅 {new Date(room.createdAt).toLocaleDateString()}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText(room.id);
-                      addToast("Room ID copied to clipboard", "success");
-                    }}
-                    title="Copy Room ID"
-                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                  >
-                    📋
-                  </button>
-                  <Button size="sm" onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/room/${room.id}`);
-                  }}>
-                    Enter →
-                  </Button>
+            <Card
+              key={room.id}
+              variant="default"
+              padding="none"
+              onClick={() => navigate(`/room/${room.id}`)}
+              className="group overflow-hidden cursor-pointer"
+            >
+              {/* Accent top bar */}
+              <div className="h-1 w-full gradient-brand" />
+
+              <div className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors flex-1 pr-3 leading-snug">
+                    {room.name}
+                  </h3>
+                  <Badge variant="primary" dot size="sm" className="flex-shrink-0">
+                    {room.participants} member{room.participants !== 1 ? "s" : ""}
+                  </Badge>
+                </div>
+
+                {room.description && (
+                  <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">{room.description}</p>
+                )}
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-4">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(room.createdAt).toLocaleDateString()}
+                  </div>
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(room.id); addToast("Room ID copied", "success"); }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                      title="Copy Room ID"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => navigate(`/room/${room.id}`)}
+                      className="px-3 py-1.5 text-xs font-bold gradient-brand text-white rounded-lg shadow-button hover:shadow-button-hover transition-all hover:-translate-y-0.5"
+                    >
+                      Enter →
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
           ))}
         </div>
       )}
-      
-      {/* Create Room Modal */}
+
+      {/* ─── Create Modal ─────────────────────── */}
       <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setFormErrors({});
-        }}
+        isOpen={isCreateOpen}
+        onClose={() => { setIsCreateOpen(false); setFormErrors({}); }}
         title="Create New Room"
+        description="Set up a collaboration space for your team"
       >
         <div className="space-y-4">
           <Input
             label="Room Name"
-            value={createFormData.name}
-            onChange={(e) => {
-              setCreateFormData({ ...createFormData, name: e.target.value });
-              if (formErrors.name) {
-                setFormErrors({ ...formErrors, name: "" });
-              }
-            }}
-            placeholder="Enter room name"
+            value={createForm.name}
+            onChange={(e) => { setCreateForm({ ...createForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
+            placeholder="e.g. CS Project Group"
             error={formErrors.name}
             required
           />
-          
           <Textarea
             label="Description"
-            value={createFormData.description}
-            onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
-            placeholder="Enter room description (optional)"
+            value={createForm.description}
+            onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+            placeholder="What's this room for? (optional)"
             rows={3}
           />
-          
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => {
-              setIsCreateModalOpen(false);
-              setFormErrors({});
-            }} disabled={isLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateRoom} disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Room"}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => { setIsCreateOpen(false); setFormErrors({}); }} disabled={isLoading}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={isLoading}>
+              {isLoading ? "Creating…" : "Create Room"}
             </Button>
           </div>
         </div>
       </Modal>
-      
-      {/* Join Room Modal */}
+
+      {/* ─── Join Modal ───────────────────────── */}
       <Modal
-        isOpen={isJoinModalOpen}
-        onClose={() => setIsJoinModalOpen(false)}
+        isOpen={isJoinOpen}
+        onClose={() => setIsJoinOpen(false)}
         title="Join Room"
+        description="Enter a room ID to join an existing collaboration session"
       >
         <div className="space-y-4">
           <Input
             label="Room ID"
-            value={joinRoomId}
-            onChange={(e) => setJoinRoomId(e.target.value)}
-            placeholder="Enter room ID"
+            value={joinId}
+            onChange={(e) => setJoinId(e.target.value)}
+            placeholder="e.g. room-1700000000000"
+            hint="Ask a team member to share the room ID with you"
             required
           />
-          
-          <p className="text-sm text-gray-600">
-            Ask your team member for the room ID to join their collaboration session.
-          </p>
-          
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => setIsJoinModalOpen(false)} disabled={isLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleJoinRoom} disabled={isLoading}>
-              {isLoading ? "Joining..." : "Join Room"}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setIsJoinOpen(false)} disabled={isLoading}>Cancel</Button>
+            <Button onClick={handleJoin} disabled={isLoading}>
+              {isLoading ? "Joining…" : "Join Room"}
             </Button>
           </div>
         </div>
@@ -270,4 +228,3 @@ function Collaboration() {
 }
 
 export default Collaboration;
-
