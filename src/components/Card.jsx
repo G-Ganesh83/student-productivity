@@ -1,6 +1,6 @@
 function Card({ children, className = "", onClick, variant = "default", padding = "md" }) {
   const base =
-    "rounded-2xl transition-all duration-200 bg-white border border-slate-100";
+    "rounded-3xl transition-all duration-200 ease-out bg-white border border-slate-200/80";
 
   const variants = {
     default: "shadow-card",
@@ -19,7 +19,7 @@ function Card({ children, className = "", onClick, variant = "default", padding 
   };
 
   const clickable = onClick
-    ? "cursor-pointer hover-lift hover:border-brand-100"
+    ? "cursor-pointer hover-lift hover:border-sky-100"
     : "";
 
   return (

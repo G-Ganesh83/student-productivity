@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 /* ─── Page title map ─────────────────────────────────────────── */
 const PAGE_META = {
-  "/dashboard":     { title: "Dashboard",     emoji: "🏠" },
-  "/productivity":  { title: "Productivity",  emoji: "✅" },
-  "/collaboration": { title: "Collaboration", emoji: "👥" },
-  "/resources":     { title: "Resources",     emoji: "📚" },
+  "/dashboard": { title: "Dashboard", subtitle: "Your overview, activity, and quick actions." },
+  "/productivity": { title: "Productivity", subtitle: "Organize tasks, priorities, and deadlines." },
+  "/collaboration": { title: "Collaboration", subtitle: "Create rooms, join teams, and work together live." },
+  "/resources": { title: "Resources", subtitle: "Keep notes, links, and references within reach." },
+  "/settings": { title: "Settings", subtitle: "Manage account details and session preferences." },
+  "/help": { title: "Help & Support", subtitle: "Quick answers and guidance across the workspace." },
 };
 
 /* ─── Icon button wrapper ────────────────────────────────────── */
@@ -17,7 +19,7 @@ function NavIconBtn({ label, badge, children, onClick }) {
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="relative flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 active:bg-slate-200 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-1"
+        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 ease-out hover:border-slate-300 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.98] active:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-1"
     >
       {children}
       {badge > 0 && (
@@ -50,11 +52,11 @@ function SearchBar() {
   }, []);
 
   return (
-    <div className="relative flex items-center w-full max-w-xs lg:max-w-sm xl:max-w-md">
+    <div className="relative flex items-center w-full max-w-sm lg:max-w-md xl:max-w-lg">
       {/* Search icon */}
       <div className="absolute left-3.5 flex items-center pointer-events-none">
         <svg
-          className={`w-4 h-4 transition-colors duration-150 ${isFocused ? "text-indigo-500" : "text-slate-400"}`}
+          className={`w-4 h-4 transition-colors duration-200 ${isFocused ? "text-sky-500" : "text-slate-400"}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -72,14 +74,13 @@ function SearchBar() {
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={`
-          w-full pl-10 pr-16 py-2.5
+          w-full rounded-2xl border px-0 py-3 pl-10 pr-16
           text-sm font-medium text-slate-700 placeholder:text-slate-400
-          bg-slate-50 rounded-xl
-          border-2 transition-all duration-200
+          bg-white transition-all duration-200 ease-out
           focus:outline-none focus:bg-white
           ${isFocused
-            ? "border-indigo-300 ring-3 ring-indigo-100 shadow-sm"
-            : "border-slate-100 hover:border-slate-200 hover:bg-white"
+            ? "border-sky-300 ring-4 ring-sky-100 shadow-sm"
+            : "border-slate-200 hover:border-slate-300 hover:bg-white"
           }
         `}
       />
@@ -119,7 +120,7 @@ function AvatarMenu({ user, onLogout, onNavigate }) {
       <button
         onClick={() => setOpen((p) => !p)}
         aria-label="Account menu"
-        className={`relative flex items-center gap-2.5 pl-1 pr-2.5 py-1 rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-1 ${open ? "bg-slate-100" : "hover:bg-slate-100"}`}
+        className={`relative flex items-center gap-3 rounded-2xl border px-2 py-1.5 transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-1 ${open ? "border-slate-300 bg-slate-50" : "border-transparent hover:border-slate-200 hover:bg-white active:scale-[0.99]"}`}
       >
         {/* Avatar + status */}
         <div className="relative flex-shrink-0">
@@ -151,7 +152,7 @@ function AvatarMenu({ user, onLogout, onNavigate }) {
       {/* Dropdown */}
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-lg border border-slate-100 py-1.5 z-50 overflow-hidden"
+        className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-3xl border border-slate-200 bg-white py-1.5 shadow-panel z-50"
           style={{ animation: "dropdownIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both" }}
         >
           {/* User info header */}
@@ -233,8 +234,8 @@ function NotificationsPanel() {
       </NavIconBtn>
 
       {open && (
-        <div
-          className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-lg border border-slate-100 z-50 overflow-hidden"
+      <div
+        className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-panel z-50"
           style={{ animation: "dropdownIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both" }}
         >
           {/* Header */}
@@ -294,7 +295,7 @@ function TopNavbar({ onMobileMenuOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user, isAuthenticated } = useAuth();
-  const meta = PAGE_META[location.pathname] || { title: "LEARN EASY", emoji: "✦" };
+  const meta = PAGE_META[location.pathname] || { title: "Workspace", subtitle: "Manage your work from one place." };
 
   const handleLogout = () => {
     logout();
@@ -302,17 +303,15 @@ function TopNavbar({ onMobileMenuOpen }) {
   };
 
   return (
-    <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-100 flex items-center"
-      style={{ boxShadow: "0 1px 0 0 #f1f5f9, 0 2px 8px -2px rgba(0,0,0,0.06)" }}
-    >
-      <div className="flex items-center justify-between w-full px-4 sm:px-6 gap-4">
+    <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/95 backdrop-blur-xl">
+      <div className="flex w-full items-center justify-between gap-5 px-4 py-3.5 sm:px-6 lg:px-8 xl:px-10">
 
         {/* ── LEFT ──────────────────────────────── */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex min-w-0 items-center gap-3.5 flex-shrink-0">
           {/* Mobile hamburger */}
           <button
             onClick={onMobileMenuOpen}
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className="lg:hidden flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-sky-300"
             aria-label="Open navigation"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -320,36 +319,23 @@ function TopNavbar({ onMobileMenuOpen }) {
             </svg>
           </button>
 
-          {/* Page breadcrumb / title */}
-          <div className="flex items-center gap-2">
-            <Link
-              to="/"
-              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
-              className="hidden lg:flex items-center gap-1.5 text-sm text-slate-400 font-semibold hover:text-slate-600 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              LEARN EASY
-            </Link>
-
-            {/* Separator */}
-            <svg className="hidden lg:block w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-
-            {/* Current page */}
-            <span className="text-sm font-bold text-slate-800">{meta.title}</span>
+          <div className="min-w-0">
+            <p className="font-display truncate text-[2rem] font-semibold leading-none tracking-tight text-slate-900">
+              {meta.title}
+            </p>
+            <p className="mt-1 hidden truncate text-sm font-normal text-slate-500 md:block">
+              {meta.subtitle}
+            </p>
           </div>
         </div>
 
         {/* ── CENTER: Search ────────────────────── */}
-        <div className="flex-1 flex justify-center px-2 sm:px-4">
+        <div className="hidden flex-1 justify-center px-3 sm:px-4 lg:flex">
           <SearchBar />
         </div>
 
         {/* ── RIGHT: Actions ────────────────────── */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-2.5 flex-shrink-0">
           {/* Notifications */}
           <NotificationsPanel />
 
@@ -361,7 +347,7 @@ function TopNavbar({ onMobileMenuOpen }) {
           </NavIconBtn>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-slate-150 mx-1" style={{ background: "#e8ecf0" }} />
+          <div className="mx-1 hidden h-7 w-px bg-slate-200 lg:block" />
 
           {/* Avatar + dropdown */}
           {isAuthenticated ? (

@@ -36,6 +36,10 @@
     font: inherit;
   }
 
+  #root {
+    min-height: 100vh;
+  }
+
   ::selection {
     background: #E0F2FE;
     color: #1E293B;
@@ -88,15 +92,15 @@
 
   .shadow-card {
     box-shadow:
-      0 1px 2px 0 rgba(26, 26, 24, 0.04),
-      0 8px 24px -16px rgba(26, 26, 24, 0.12),
-      0 0 0 1px rgba(221, 217, 206, 0.7);
+      0 1px 2px 0 rgba(15, 23, 42, 0.02),
+      0 14px 30px -24px rgba(15, 23, 42, 0.12),
+      0 0 0 1px rgba(226, 232, 240, 0.72);
   }
 
   .shadow-card-hover {
     box-shadow:
-      0 10px 24px -18px rgba(26, 26, 24, 0.16),
-      0 0 0 1px rgba(200, 169, 110, 0.18);
+      0 14px 24px -22px rgba(15, 23, 42, 0.12),
+      0 0 0 1px rgba(186, 230, 253, 0.72);
   }
 
   .shadow-button {
@@ -112,12 +116,14 @@
 
   .shadow-panel {
     box-shadow:
-      0 0 0 1px rgba(221, 217, 206, 0.9),
-      0 16px 32px -24px rgba(26, 26, 24, 0.16);
+      0 0 0 1px rgba(226, 232, 240, 0.92),
+      0 16px 32px -24px rgba(15, 23, 42, 0.12);
   }
 
   .shadow-sidebar {
-    box-shadow: 4px 0 24px -10px rgba(26, 26, 24, 0.12);
+    box-shadow:
+      0 0 0 1px rgba(226, 232, 240, 0.78),
+      18px 0 40px -30px rgba(15, 23, 42, 0.18);
   }
 
   .shadow-toast {
@@ -132,10 +138,10 @@
   }
 
   .hover-lift:hover {
-    transform: translateY(-3px);
+    transform: translateY(-1px);
     box-shadow:
-      0 10px 24px -18px rgba(26, 26, 24, 0.16),
-      0 0 0 1px rgba(200, 169, 110, 0.18);
+      0 14px 24px -22px rgba(15, 23, 42, 0.12),
+      0 0 0 1px rgba(186, 230, 253, 0.72);
   }
 
   .nav-item-active {

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BrandLogo from "./BrandLogo";
 
 const NAV_LINKS = [
   { href: "#features", label: "Features" },
@@ -17,18 +18,10 @@ function Navbar({
     <header className="sticky top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl rounded-full border border-slate-200/60 bg-white/60 shadow-[0_20px_35px_-28px_rgba(15,23,42,0.35)] backdrop-blur-md">
         <div className="grid min-h-[4.5rem] grid-cols-[auto_1fr_auto] items-center gap-4 px-5 sm:px-6">
-          <Link
+          <BrandLogo
             to="/"
             onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
-            className="flex items-center gap-3"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
-              <span className="font-display text-xl leading-none">L</span>
-            </div>
-            <span className="font-ui text-sm font-semibold tracking-[0.14em] text-slate-900 sm:text-[0.95rem]">
-              LEARN EASY
-            </span>
-          </Link>
+          />
 
           <nav className="hidden items-center justify-center gap-8 md:flex">
             {NAV_LINKS.map((link) => (

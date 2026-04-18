@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
+import BrandLogo from "../components/BrandLogo";
 import TopNavbar from "../components/TopNavbar";
 
 const NAV_ITEMS = [
@@ -65,35 +66,22 @@ function AppLayout() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-surface-1 flex">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,#f8fbfe_100%)] flex">
       {/* ─── Desktop Sidebar ─────────────────── */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[240px] flex-col bg-[#fdfdfd] border-r border-slate-200/60 z-30">
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[276px] flex-col border-r border-slate-200/80 bg-[#F8FAFC] shadow-sidebar z-30">
         
         {/* Logo Area */}
-        <div className="flex items-center gap-3 px-5 h-16 flex-shrink-0 mt-1">
-          <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center flex-shrink-0 shadow-sm">
-            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <Link 
-            to="/" 
+        <div className="px-6 pb-6 pt-7 flex-shrink-0">
+          <BrandLogo
+            to="/"
             onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
-            className="text-base font-bold text-slate-800 tracking-tight hover:text-indigo-600 transition-colors"
-          >
-            LEARN EASY
-          </Link>
-          <button className="ml-auto w-6 h-6 rounded-md text-slate-400 hover:bg-slate-100 flex items-center justify-center transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
-          </button>
+          />
         </div>
 
         {/* Navigation Group */}
-        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto scrollbar-thin">
-          <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Main Menu
+        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto scrollbar-thin">
+          <p className="px-4 pb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+            Workspace
           </p>
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
@@ -101,28 +89,45 @@ function AppLayout() {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group relative ${
+                className={`group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all duration-200 ease-out ${
                   active 
-                    ? "font-semibold text-indigo-700 bg-indigo-50/80" 
-                    : "font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                    ? "font-medium text-slate-800 bg-sky-50/65 shadow-[inset_0_0_0_1px_rgba(240,249,255,0.95)]" 
+                    : "font-medium text-slate-600 hover:text-slate-900 hover:bg-white/80"
                 }`}
               >
                 {/* Active left pill indicator */}
                 {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-md" />
+                  <div className="absolute left-2 top-1/2 h-6 w-px -translate-y-1/2 rounded-full bg-sky-400/90 shadow-[0_0_8px_rgba(56,189,248,0.14)]" />
                 )}
                 
-                <span className={`flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"}`}>
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${
+                  active
+                    ? "bg-white/90 text-sky-600"
+                    : "bg-white/70 text-slate-400 group-hover:bg-white group-hover:text-slate-600 group-hover:ring-1 group-hover:ring-slate-200/80"
+                }`}>
                   {item.icon}
                 </span>
-                {item.name}
+                <span className="font-ui tracking-[-0.01em]">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Bottom Actions */}
-        <div className="px-3 py-4 space-y-1 mt-auto flex-shrink-0" />
+        <div className="px-4 pb-6 pt-4 mt-auto flex-shrink-0">
+          <div className="rounded-3xl border border-slate-200 bg-white/85 px-4 py-4">
+            <p className="font-ui text-sm font-semibold text-slate-900">Need help navigating?</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Visit Help for quick guidance on rooms, tasks, and resources.
+            </p>
+            <Link
+              to="/help"
+              className="font-ui mt-4 inline-flex items-center text-sm font-semibold text-sky-700 transition-colors hover:text-sky-800"
+            >
+              Open help
+            </Link>
+          </div>
+        </div>
       </aside>
 
       {/* ─── Mobile Top Bar (handled by TopNavbar) ── */}
@@ -140,22 +145,14 @@ function AppLayout() {
             style={{ animation: "slideInLeft 0.22s cubic-bezier(0.34,1.56,0.64,1) both" }}
           >
             {/* Mobile Nav Area */}
-            <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100">
-              <Link 
-                to="/" 
+            <div className="flex items-center justify-between px-5 h-20 border-b border-slate-100">
+              <BrandLogo
+                to="/"
                 onClick={() => {
                   window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
                   setIsMobileOpen(false);
                 }}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-              >
-                <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center shadow-sm">
-                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <span className="text-base font-bold text-slate-800 tracking-tight">LEARN EASY</span>
-              </Link>
+              />
               <button
                 onClick={() => setIsMobileOpen(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
@@ -167,7 +164,7 @@ function AppLayout() {
               </button>
             </div>
 
-            <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
               {NAV_ITEMS.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -175,19 +172,21 @@ function AppLayout() {
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative ${
+                    className={`group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all ${
                       active 
-                        ? "font-semibold text-indigo-700 bg-indigo-50/80" 
-                        : "font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                        ? "font-semibold text-sky-800 bg-sky-50" 
+                        : "font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                     }`}
                   >
                     {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-md" />
+                      <div className="absolute left-1 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-sky-500" />
                     )}
-                    <span className={active ? "text-indigo-600" : "text-slate-400"}>
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                      active ? "bg-white text-sky-600 ring-1 ring-sky-100" : "bg-slate-50 text-slate-400"
+                    }`}>
                       {item.icon}
                     </span>
-                    {item.name}
+                    <span className="font-ui">{item.name}</span>
                   </Link>
                 );
               })}
@@ -200,10 +199,10 @@ function AppLayout() {
       )}
 
       {/* ─── Main Content ─────────────────────── */}
-      <main className="flex-1 lg:pl-[240px] min-w-0 flex flex-col">
+      <main className="flex-1 lg:pl-[276px] min-w-0 flex flex-col">
         {/* Premium top navbar */}
         <TopNavbar onMobileMenuOpen={() => setIsMobileOpen(true)} />
-        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 page-enter">
+        <div className="flex-1 w-full bg-[radial-gradient(circle_at_top,_rgba(224,242,254,0.28),_rgba(255,255,255,0)_28%),linear-gradient(180deg,#ffffff_0%,#fcfdff_100%)] px-4 py-6 sm:px-6 lg:px-8 lg:py-8 xl:px-10 page-enter">
           <Outlet />
         </div>
       </main>

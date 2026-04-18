@@ -300,12 +300,12 @@ function Dashboard() {
             <Link
               key={action.name}
               to={action.link}
-              className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              className="group rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-card-hover"
             >
-              <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${action.iconClassName}`}>
+              <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${action.iconClassName}`}>
                 {action.icon}
               </div>
-              <p className="mt-4 font-ui text-sm font-semibold text-slate-900">{action.name}</p>
+              <p className="mt-4 font-ui text-sm font-medium text-slate-900">{action.name}</p>
             </Link>
           ))}
         </div>
@@ -319,7 +319,7 @@ function Dashboard() {
           <p className="mt-2 text-sm text-slate-500">The latest updates from your workspace.</p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card">
           {showStatSkeleton ? (
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, index) => (
@@ -335,7 +335,7 @@ function Dashboard() {
                 <Link
                   key={item.id}
                   to={item.to}
-                  className="group flex items-start justify-between gap-4 rounded-lg py-4 transition duration-200 first:pt-0 last:pb-0 hover:bg-slate-50"
+                  className="group flex items-start justify-between gap-4 rounded-2xl py-4 transition-all duration-200 ease-out first:pt-0 last:pb-0 hover:bg-slate-50/85"
                 >
                   <div>
                     <p className="flex items-center gap-2 text-sm font-medium text-gray-700 transition duration-200 group-hover:text-slate-900">
