@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 /* ─── Page title map ─────────────────────────────────────────── */
 const PAGE_META = {
@@ -97,9 +98,15 @@ function SearchBar() {
 }
 
 /* ─── Avatar dropdown ────────────────────────────────────────── */
-function AvatarMenu() {
+function AvatarMenu({ user, onLogout, onNavigate }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const initials = user?.name
+    ?.split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "U";
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -117,7 +124,7 @@ function AvatarMenu() {
         {/* Avatar + status */}
         <div className="relative flex-shrink-0">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-            JD
+            {initials}
           </div>
           {/* Online indicator */}
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
@@ -125,8 +132,8 @@ function AvatarMenu() {
 
         {/* Name + role — hidden on smaller screens */}
         <div className="hidden xl:block text-left leading-tight">
-          <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">John Doe</p>
-          <p className="text-[11px] text-slate-500 font-medium">Student</p>
+          <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">{user?.name || "User"}</p>
+          <p className="text-[11px] text-slate-500 font-medium">{user?.email || "Signed in"}</p>
         </div>
 
         {/* Chevron */}
@@ -149,18 +156,22 @@ function AvatarMenu() {
         >
           {/* User info header */}
           <div className="px-4 py-3 border-b border-slate-100">
-            <p className="text-sm font-bold text-slate-900">John Doe</p>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">john@university.edu</p>
+            <p className="text-sm font-bold text-slate-900">{user?.name || "User"}</p>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">{user?.email || "No email available"}</p>
           </div>
 
           {/* Menu items */}
           {[
-            { label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-            { label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
-            { label: "Help & Support", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+            { label: "Dashboard", path: "/dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+            { label: "Settings", path: "/settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+            { label: "Help & Support", path: "/help", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
           ].map((item) => (
             <button
               key={item.label}
+              onClick={() => {
+                onNavigate(item.path);
+                setOpen(false);
+              }}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
             >
               <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -171,7 +182,10 @@ function AvatarMenu() {
           ))}
 
           <div className="border-t border-slate-100 mt-1.5 pt-1.5">
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left">
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left"
+            >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
@@ -278,7 +292,14 @@ function NotificationsPanel() {
 /* ─── Main export ────────────────────────────────────────────── */
 function TopNavbar({ onMobileMenuOpen }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user, isAuthenticated } = useAuth();
   const meta = PAGE_META[location.pathname] || { title: "StudyHub", emoji: "✦" };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-100 flex items-center"
@@ -333,7 +354,7 @@ function TopNavbar({ onMobileMenuOpen }) {
           <NotificationsPanel />
 
           {/* Settings */}
-          <NavIconBtn label="Settings">
+          <NavIconBtn label="Settings" onClick={() => navigate("/settings")}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -343,7 +364,16 @@ function TopNavbar({ onMobileMenuOpen }) {
           <div className="w-px h-6 bg-slate-150 mx-1" style={{ background: "#e8ecf0" }} />
 
           {/* Avatar + dropdown */}
-          <AvatarMenu />
+          {isAuthenticated ? (
+            <AvatarMenu user={user} onLogout={handleLogout} onNavigate={navigate} />
+          ) : (
+            <Link
+              to="/login"
+              className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>

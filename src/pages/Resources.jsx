@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -39,7 +39,9 @@ const TYPE_CONFIG = {
 const EMPTY_FORM = { title: "", type: "link", url: "", tags: "" };
 
 function Resources() {
+  const nextIdRef = useRef(0);
   const [resources, setResources] = useState(() => {
+    // TODO: Replace with backend API
     const saved = localStorage.getItem("resources");
     return saved ? JSON.parse(saved) : dummyResources;
   });
@@ -50,7 +52,15 @@ function Resources() {
   const [toasts, setToasts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => { localStorage.setItem("resources", JSON.stringify(resources)); }, [resources]);
+  useEffect(() => {
+    // TODO: Replace with backend API
+    localStorage.setItem("resources", JSON.stringify(resources));
+  }, [resources]);
+
+  const getNextId = () => {
+    nextIdRef.current += 1;
+    return nextIdRef.current;
+  };
 
   const filtered = useMemo(() =>
     resources.filter((r) => {
@@ -61,7 +71,7 @@ function Resources() {
   );
 
   const addToast = (message, type = "success") => {
-    const id = Date.now();
+    const id = getNextId();
     setToasts((p) => [...p, { id, message, type }]);
   };
   const removeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
@@ -85,7 +95,7 @@ function Resources() {
     setIsLoading(true);
     setTimeout(() => {
       const newRes = {
-        id: Date.now(),
+        id: `resource-${getNextId()}`,
         title: form.title,
         type: form.type,
         url: form.url,

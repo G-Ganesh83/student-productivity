@@ -1,60 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "../components/Card";
-import { dummyStats } from "../data/dummyData";
-
-const STAT_CONFIG = [
-  {
-    title: "Tasks",
-    value: `${dummyStats.tasks.completed}`,
-    total: `of ${dummyStats.tasks.total}`,
-    label: "Completed",
-    link: "/productivity",
-    color: "brand",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
-    gradient: "from-indigo-500 to-violet-500",
-    bg: "from-indigo-50 to-violet-50",
-    border: "border-indigo-100",
-    textColor: "text-indigo-600",
-  },
-  {
-    title: "Active Rooms",
-    value: String(dummyStats.rooms.active),
-    total: `of ${dummyStats.rooms.total}`,
-    label: "Live sessions",
-    link: "/collaboration",
-    color: "sky",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-    gradient: "from-sky-500 to-cyan-500",
-    bg: "from-sky-50 to-cyan-50",
-    border: "border-sky-100",
-    textColor: "text-sky-600",
-  },
-  {
-    title: "Resources",
-    value: String(dummyStats.resources.total),
-    total: `${dummyStats.resources.recent} recent`,
-    label: "Study materials",
-    link: "/resources",
-    color: "emerald",
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
-    gradient: "from-emerald-500 to-teal-500",
-    bg: "from-emerald-50 to-teal-50",
-    border: "border-emerald-100",
-    textColor: "text-emerald-600",
-  },
-];
+import { getRooms } from "../api/roomApi";
+import { getTasks } from "../api/taskApi";
+import { useAuth } from "../context/AuthContext";
 
 const QUICK_ACTIONS = [
   {
@@ -84,55 +33,157 @@ const QUICK_ACTIONS = [
     ),
   },
   {
-    name: "Join Room",
-    desc: "Enter with a Room ID",
-    link: "/collaboration",
-    gradient: "from-violet-500 to-purple-500",
-    bg: "from-violet-50 to-purple-50",
-    border: "border-violet-100",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-      </svg>
-    ),
-  },
-  {
-    name: "Upload Resource",
-    desc: "Add study material",
-    link: "/resources",
+    name: "Account Settings",
+    desc: "Update your profile",
+    link: "/settings",
     gradient: "from-amber-500 to-orange-500",
     bg: "from-amber-50 to-orange-50",
     border: "border-amber-100",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Help Center",
+    desc: "Get support",
+    link: "/help",
+    gradient: "from-emerald-500 to-teal-500",
+    bg: "from-emerald-50 to-teal-50",
+    border: "border-emerald-100",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
 ];
 
 function Dashboard() {
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const [taskResponse, roomResponse] = await Promise.all([getTasks(), getRooms()]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setTasks(taskResponse?.data || []);
+        setRooms(roomResponse || []);
+      } catch (requestError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(requestError.response?.data?.message || "Unable to load dashboard data.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const stats = useMemo(() => {
+    const completedTasks = tasks.filter((task) => task.status === "completed").length;
+    const pendingTasks = tasks.filter((task) => task.status !== "completed").length;
+    const activeRooms = rooms.length;
+
+    return [
+      {
+        title: "Tasks",
+        value: String(completedTasks),
+        total: `of ${tasks.length}`,
+        label: "Completed",
+        link: "/productivity",
+        gradient: "from-indigo-500 to-violet-500",
+        bg: "from-indigo-50 to-violet-50",
+        border: "border-indigo-100",
+        textColor: "text-indigo-600",
+        icon: (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+        ),
+      },
+      {
+        title: "Pending Tasks",
+        value: String(pendingTasks),
+        total: `${tasks.length} total`,
+        label: "Still in progress",
+        link: "/productivity",
+        gradient: "from-amber-500 to-orange-500",
+        bg: "from-amber-50 to-orange-50",
+        border: "border-amber-100",
+        textColor: "text-amber-600",
+        icon: (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        title: "Rooms",
+        value: String(activeRooms),
+        total: activeRooms === 1 ? "1 joined room" : `${activeRooms} joined rooms`,
+        label: "Collaboration spaces",
+        link: "/collaboration",
+        gradient: "from-sky-500 to-cyan-500",
+        bg: "from-sky-50 to-cyan-50",
+        border: "border-sky-100",
+        textColor: "text-sky-600",
+        icon: (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        ),
+      },
+    ];
+  }, [rooms, tasks]);
+
   return (
     <div className="space-y-8">
-      {/* ─── Header ─────────────────────────── */}
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <p className="text-slate-500 font-medium text-sm">Welcome back</p>
+          <p className="text-slate-500 font-medium text-sm">Welcome back, {user?.name || "Student"}</p>
         </div>
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
           Your Dashboard
         </h1>
         <p className="mt-1 text-slate-500 text-sm">
-          Here's a summary of everything happening in your workspace.
+          Here&apos;s a real-time summary of your tasks and collaboration spaces.
         </p>
       </div>
 
-      {/* ─── Stats Grid ─────────────────────── */}
+      {error && (
+        <Card variant="subtle" padding="md">
+          <p className="text-sm font-medium text-red-600">{error}</p>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {STAT_CONFIG.map((stat) => (
+        {stats.map((stat) => (
           <Link key={stat.title} to={stat.link} className="group">
             <div className={`relative bg-gradient-to-br ${stat.bg} border ${stat.border} rounded-2xl p-6 shadow-card hover-lift overflow-hidden transition-all duration-200`}>
-              {/* Background blob */}
               <div className={`absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br ${stat.gradient} opacity-10 rounded-full`} />
 
               <div className="flex items-start justify-between mb-5">
@@ -147,8 +198,10 @@ function Dashboard() {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">{stat.title}</p>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                  <p className={`text-xs font-semibold ${stat.textColor}`}>{stat.total}</p>
+                  <p className="text-3xl font-bold text-slate-900">
+                    {isLoading ? "--" : stat.value}
+                  </p>
+                  <p className={`text-xs font-semibold ${stat.textColor}`}>{isLoading ? "Loading..." : stat.total}</p>
                 </div>
                 <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
               </div>
@@ -157,7 +210,6 @@ function Dashboard() {
         ))}
       </div>
 
-      {/* ─── Quick Actions ───────────────────── */}
       <Card variant="default" padding="lg">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-6 rounded-full gradient-brand" />

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
 import Room from '../models/Room.js';
 import User from '../models/User.js';
@@ -72,6 +73,12 @@ const initializeSocketManager = (io) => {
     socket.on('join-room', async (payload = {}) => {
       try {
         const { roomId } = payload;
+
+        if (!mongoose.Types.ObjectId.isValid(roomId)) {
+          emitSocketError(socket, 'Room not found', 'ROOM_NOT_FOUND');
+          return;
+        }
+
         const hasAccess = await resolveRoomAccess(socket, roomId);
 
         if (!hasAccess) {
@@ -136,7 +143,7 @@ const initializeSocketManager = (io) => {
           return;
         }
 
-        if (!code?.trim()) {
+        if (code === undefined) {
           return;
         }
 
@@ -167,7 +174,7 @@ const initializeSocketManager = (io) => {
           return;
         }
 
-        if (!code?.trim()) {
+        if (code === undefined) {
           return;
         }
 
@@ -187,6 +194,32 @@ const initializeSocketManager = (io) => {
       } catch (error) {
         console.error('Socket Error:', error.message);
         emitSocketError(socket, 'Failed to sync code', 'INVALID_INPUT');
+      }
+    });
+
+    socket.on('code-output', async (payload = {}) => {
+      try {
+        const { roomId, output } = payload;
+
+        if (!roomId) {
+          emitSocketError(socket, 'Room ID is required', 'INVALID_INPUT');
+          return;
+        }
+
+        if (output === undefined) {
+          return;
+        }
+
+        const hasAccess = await resolveRoomAccess(socket, roomId);
+
+        if (!hasAccess) {
+          return;
+        }
+
+        socket.to(roomId).emit('receive-output', output);
+      } catch (error) {
+        console.error('Socket Error:', error.message);
+        emitSocketError(socket, 'Failed to sync output', 'INVALID_INPUT');
       }
     });
 

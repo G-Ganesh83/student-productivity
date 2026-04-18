@@ -10,7 +10,7 @@ import initializeSocketManager from './socket/socketManager.js';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 const startServer = async () => {
   try {
@@ -20,7 +20,8 @@ const startServer = async () => {
 
     const io = new Server(server, {
       cors: {
-        origin: '*',
+        origin: 'http://localhost:5173',
+        credentials: true,
       },
     });
 

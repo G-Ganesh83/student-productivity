@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function LandingLayout() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
+  const initials = user?.name
+    ?.split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "U";
 
   return (
     <div className="min-h-screen bg-white">
@@ -36,17 +44,42 @@ function LandingLayout() {
 
             {/* Desktop CTAs */}
             <div className="hidden md:flex items-center gap-3">
-              <Link
-                to="/dashboard"
-                className="text-sm font-semibold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link to="/dashboard">
-                <button className="gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-button hover:shadow-button-hover hover:-translate-y-0.5 transition-all duration-200">
-                  Get Started
-                </button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 transition-all hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center text-white text-xs font-bold shadow-button">
+                      {initials}
+                    </div>
+                    <div className="text-left leading-tight">
+                      <p className="text-sm font-semibold text-slate-800">{user?.name}</p>
+                      <p className="text-xs text-slate-500">{user?.email}</p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="text-sm font-semibold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="text-sm font-semibold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link to="/register">
+                    <button className="gradient-brand text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-button hover:shadow-button-hover hover:-translate-y-0.5 transition-all duration-200">
+                      Get Started
+                    </button>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile hamburger */}
@@ -73,8 +106,24 @@ function LandingLayout() {
               <a href="#features" className="block px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">Features</a>
               <a href="#tech" className="block px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">Tech Stack</a>
               <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
-                <Link to="/dashboard" className="block text-center text-sm font-semibold text-slate-700 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50">Sign In</Link>
-                <Link to="/dashboard" className="block text-center text-sm font-semibold text-white py-2.5 rounded-xl gradient-brand shadow-button">Get Started Free</Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link to="/dashboard" className="block text-center text-sm font-semibold text-slate-700 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50">
+                      Go to Dashboard
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="block text-center text-sm font-semibold text-slate-700 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="block text-center text-sm font-semibold text-slate-700 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50">Sign In</Link>
+                    <Link to="/register" className="block text-center text-sm font-semibold text-white py-2.5 rounded-xl gradient-brand shadow-button">Get Started Free</Link>
+                  </>
+                )}
               </div>
             </div>
           )}

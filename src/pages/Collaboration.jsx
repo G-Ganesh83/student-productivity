@@ -1,73 +1,141 @@
-import { useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Textarea from "../components/Textarea";
-import Badge from "../components/Badge";
 import ToastContainer from "../components/ToastContainer";
-import { dummyRooms } from "../data/dummyData";
+import { createRoom, getApiErrorMessage, joinRoom } from "../api/roomApi";
 
 function Collaboration() {
   const navigate = useNavigate();
+  const nextIdRef = useRef(0);
 
-  const [rooms, setRooms] = useState(() => {
-    const saved = localStorage.getItem("rooms");
-    return saved ? JSON.parse(saved) : dummyRooms;
-  });
-
-  useEffect(() => { localStorage.setItem("rooms", JSON.stringify(rooms)); }, [rooms]);
+  const getNextId = () => {
+    nextIdRef.current += 1;
+    return nextIdRef.current;
+  };
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", description: "" });
-  const [joinId, setJoinId] = useState("");
+  const [joinCode, setJoinCode] = useState("");
   const [formErrors, setFormErrors] = useState({});
   const [toasts, setToasts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [error, setError] = useState("");
 
   const addToast = (message, type = "success") => {
-    const id = Date.now();
+    const id = getNextId();
     setToasts((p) => [...p, { id, message, type }]);
   };
   const removeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
 
-  const openCreate = () => { setCreateForm({ name: "", description: "" }); setFormErrors({}); setIsCreateOpen(true); };
-  const openJoin = () => { setJoinId(""); setIsJoinOpen(true); };
+  const openCreate = () => {
+    setCreateForm({ name: "", description: "" });
+    setFormErrors({});
+    setIsCreateOpen(true);
+  };
 
-  const handleCreate = () => {
+  const openJoin = () => {
+    setJoinCode("");
+    setFormErrors({});
+    setIsJoinOpen(true);
+  };
+
+  const handleCreateRoom = async () => {
+    const trimmedName = createForm.name.trim();
     const errs = {};
-    if (!createForm.name.trim()) errs.name = "Room name is required";
-    setFormErrors(errs);
-    if (Object.keys(errs).length) return addToast("Please enter a room name", "error");
 
-    setIsLoading(true);
-    setTimeout(() => {
-      const room = {
-        id: `room-${Date.now()}`,
-        name: createForm.name,
-        description: createForm.description,
-        participants: 1,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setRooms((p) => [room, ...p]);
+    if (!trimmedName) {
+      errs.name = "Room name is required";
+    }
+
+    setFormErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      addToast("Please enter a room name", "error");
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      setError("");
+      const room = await createRoom({ name: trimmedName });
+      const roomId = room?._id;
+
+      if (!roomId) {
+        throw new Error("Room ID was not returned by the server.");
+      }
+
       setCreateForm({ name: "", description: "" });
       setIsCreateOpen(false);
-      setIsLoading(false);
-      addToast("Room created!", "success");
-      navigate(`/room/${room.id}`);
-    }, 300);
+      setFormErrors({});
+      addToast("Room created successfully", "success");
+      navigate(`/room/${roomId}`);
+    } catch (error) {
+      console.log(error.response);
+      const message = getApiErrorMessage(
+        error,
+        "Unable to create the room right now. Please try again."
+      );
+
+      setError(message);
+      setFormErrors({ name: message });
+      addToast(message, "error");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const handleJoin = () => {
-    if (!joinId.trim()) return addToast("Please enter a room ID", "error");
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate(`/room/${joinId}`);
-    }, 300);
+  const handleJoinRoom = async () => {
+    const trimmedCode = joinCode.trim().toUpperCase();
+
+    if (!trimmedCode) {
+      setFormErrors({ code: "Room code is required" });
+      addToast("Please enter a room code", "error");
+      return;
+    }
+
+    setFormErrors({});
+    setIsJoining(true);
+
+    try {
+      setError("");
+      const room = await joinRoom({ code: trimmedCode });
+      const roomId = room?._id;
+
+      if (!roomId) {
+        throw new Error("Room ID was not returned by the server.");
+      }
+
+      setIsJoinOpen(false);
+      setJoinCode("");
+      addToast("Joined room successfully", "success");
+      navigate(`/room/${roomId}`);
+    } catch (error) {
+      console.log(error.response);
+      const message =
+        error?.response?.status === 404
+          ? "Invalid room code. Please check the code and try again."
+          : getApiErrorMessage(
+              error,
+              "Unable to join the room right now. Please try again."
+            );
+
+      setError(message);
+      setFormErrors({ code: message });
+      addToast(message, "error");
+    } finally {
+      setIsJoining(false);
+    }
   };
+
+  const isCreateDisabled = isCreating || !createForm.name.trim();
+  const isJoinDisabled = isJoining || !joinCode.trim();
 
   return (
     <div className="space-y-6">
@@ -95,77 +163,59 @@ function Collaboration() {
         </div>
       </div>
 
-      {/* ─── Empty State ─────────────────────── */}
-      {rooms.length === 0 ? (
+      <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5">
+        {error && (
+          <Card variant="subtle" padding="md" className="xl:col-span-2 border border-red-200 bg-red-50">
+            <p className="text-sm font-medium text-red-700">{error}</p>
+          </Card>
+        )}
+
         <Card variant="brand" padding="lg">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-2xl gradient-brand flex items-center justify-center mx-auto mb-5 shadow-button">
+          <div className="py-2">
+            <div className="w-16 h-16 rounded-2xl gradient-brand flex items-center justify-center mb-5 shadow-button">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No rooms yet</h3>
-            <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">Create your first collaboration room and invite your team</p>
-            <Button onClick={openCreate} size="lg">Create Your First Room</Button>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Start a collaboration room</h2>
+            <p className="text-slate-600 text-sm leading-6 max-w-xl">
+              Create a fresh room for your team or join an existing one with a room code.
+              After entry, the app navigates using the room&apos;s MongoDB `_id`.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button onClick={openCreate}>Create Room</Button>
+              <Button variant="secondary" onClick={openJoin}>Join Room</Button>
+            </div>
           </div>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {rooms.map((room) => (
-            <Card
-              key={room.id}
-              variant="default"
-              padding="none"
-              onClick={() => navigate(`/room/${room.id}`)}
-              className="group overflow-hidden cursor-pointer"
-            >
-              {/* Accent top bar */}
-              <div className="h-1 w-full gradient-brand" />
 
-              <div className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors flex-1 pr-3 leading-snug">
-                    {room.name}
-                  </h3>
-                  <Badge variant="primary" dot size="sm" className="flex-shrink-0">
-                    {room.participants} member{room.participants !== 1 ? "s" : ""}
-                  </Badge>
-                </div>
-
-                {room.description && (
-                  <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">{room.description}</p>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-4">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {new Date(room.createdAt).toLocaleDateString()}
-                  </div>
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(room.id); addToast("Room ID copied", "success"); }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
-                      title="Copy Room ID"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => navigate(`/room/${room.id}`)}
-                      className="px-3 py-1.5 text-xs font-bold gradient-brand text-white rounded-lg shadow-button hover:shadow-button-hover transition-all hover:-translate-y-0.5"
-                    >
-                      Enter →
-                    </button>
-                  </div>
-                </div>
+        <Card variant="default" padding="lg">
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Room entry flow</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Use the room name to create. Use the room code only to join.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-800">Create Room</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Sends <code>POST /api/rooms/create</code> with <code>{`{ name }`}</code> and
+                  navigates to <code>/room/:id</code>.
+                </p>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-800">Join Room</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Sends <code>POST /api/rooms/join</code> with <code>{`{ code }`}</code> and then
+                  uses <code>room._id</code> for navigation.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {/* ─── Create Modal ─────────────────────── */}
       <Modal
@@ -178,7 +228,12 @@ function Collaboration() {
           <Input
             label="Room Name"
             value={createForm.name}
-            onChange={(e) => { setCreateForm({ ...createForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
+            onChange={(e) => {
+              setCreateForm({ ...createForm, name: e.target.value });
+              if (formErrors.name) {
+                setFormErrors((prev) => ({ ...prev, name: "" }));
+              }
+            }}
             placeholder="e.g. CS Project Group"
             error={formErrors.name}
             required
@@ -191,9 +246,18 @@ function Collaboration() {
             rows={3}
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => { setIsCreateOpen(false); setFormErrors({}); }} disabled={isLoading}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={isLoading}>
-              {isLoading ? "Creating…" : "Create Room"}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsCreateOpen(false);
+                setFormErrors({});
+              }}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateRoom} disabled={isCreateDisabled}>
+              {isCreating ? "Creating..." : "Create Room"}
             </Button>
           </div>
         </div>
@@ -202,23 +266,41 @@ function Collaboration() {
       {/* ─── Join Modal ───────────────────────── */}
       <Modal
         isOpen={isJoinOpen}
-        onClose={() => setIsJoinOpen(false)}
+        onClose={() => {
+          setIsJoinOpen(false);
+          setFormErrors({});
+        }}
         title="Join Room"
-        description="Enter a room ID to join an existing collaboration session"
+        description="Enter a room code to join an existing collaboration session"
       >
         <div className="space-y-4">
           <Input
-            label="Room ID"
-            value={joinId}
-            onChange={(e) => setJoinId(e.target.value)}
-            placeholder="e.g. room-1700000000000"
-            hint="Ask a team member to share the room ID with you"
+            label="Room Code"
+            value={joinCode}
+            onChange={(e) => {
+              setJoinCode(e.target.value.toUpperCase());
+              if (formErrors.code) {
+                setFormErrors((prev) => ({ ...prev, code: "" }));
+              }
+            }}
+            placeholder="e.g. A1B2C3"
+            hint="Ask a team member to share the 6-character room code"
+            error={formErrors.code}
             required
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setIsJoinOpen(false)} disabled={isLoading}>Cancel</Button>
-            <Button onClick={handleJoin} disabled={isLoading}>
-              {isLoading ? "Joining…" : "Join Room"}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsJoinOpen(false);
+                setFormErrors({});
+              }}
+              disabled={isJoining}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleJoinRoom} disabled={isJoinDisabled}>
+              {isJoining ? "Joining..." : "Join Room"}
             </Button>
           </div>
         </div>
