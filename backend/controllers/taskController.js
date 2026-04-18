@@ -64,7 +64,7 @@ export const createTask = asyncHandler(async (req, res) => {
   }
 
   const task = await Task.create({
-    user: req.user.id,
+    user: req.user._id,
     title: trimmedTitle,
     description: trimmedDescription,
     priority,
@@ -79,7 +79,7 @@ export const createTask = asyncHandler(async (req, res) => {
 });
 
 export const getTasks = asyncHandler(async (req, res) => {
-  const tasks = await Task.find({ user: req.user.id })
+  const tasks = await Task.find({ user: req.user._id })
     .sort({ createdAt: -1 })
     .lean();
 
@@ -114,7 +114,7 @@ export const updateTask = asyncHandler(async (req, res) => {
   }
 
   const task = await Task.findOneAndUpdate(
-    { _id: req.params.id, user: req.user.id },
+    { _id: req.params.id, user: req.user._id },
     updates,
     { new: true, runValidators: true }
   );
@@ -134,7 +134,7 @@ export const deleteTask = asyncHandler(async (req, res) => {
 
   const task = await Task.findOneAndDelete({
     _id: req.params.id,
-    user: req.user.id,
+    user: req.user._id,
   });
 
   if (!task) {
@@ -152,7 +152,7 @@ export const toggleTaskStatus = asyncHandler(async (req, res) => {
 
   const task = await Task.findOne({
     _id: req.params.id,
-    user: req.user.id,
+    user: req.user._id,
   });
 
   if (!task) {

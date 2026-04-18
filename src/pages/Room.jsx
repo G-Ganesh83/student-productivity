@@ -7,7 +7,7 @@ import ToastContainer from "../components/ToastContainer";
 import { useAuth } from "../context/AuthContext";
 import { getCodeExecutionError, runCode as runCodeApi } from "../api/codeApi";
 import { getApiErrorMessage, getRoomDetails, leaveRoom } from "../api/roomApi";
-import { connectSocket, disconnectSocket, getSocket } from "../socket/socket";
+import { connectSocket, getSocket } from "../socket/socket";
 import { decodeTokenPayload } from "../utils/auth";
 
 const USER_COLOR_CLASSES = [
@@ -60,6 +60,7 @@ function Room() {
   const outputPanelRef = useRef(null);
   const copyToastTimeoutRef = useRef(null);
   const hasRedirectedRef = useRef(false);
+  const hasJoinedRoomRef = useRef(false);
 
   const [roomName, setRoomName] = useState("Collaboration Room");
   const [roomCode, setRoomCode] = useState("");
@@ -116,6 +117,7 @@ function Room() {
 
   useEffect(() => {
     hasRedirectedRef.current = false;
+    hasJoinedRoomRef.current = false;
     const savedCode = localStorage.getItem(`room-${roomId}-code`) || "";
     setCode(savedCode);
     latestCodeRef.current = savedCode;
@@ -130,7 +132,6 @@ function Room() {
     }
 
     hasRedirectedRef.current = true;
-    disconnectSocket();
     navigate("/collaboration", {
       replace: true,
       state: {
@@ -346,6 +347,7 @@ function Room() {
       }
 
       const isReconnect = hasConnectedRef.current;
+      const canJoinRoom = Boolean(roomId && isRoomValid);
 
       hasConnectedRef.current = true;
       setLoading(false);
@@ -371,7 +373,16 @@ function Room() {
           },
         ];
       });
+
+      console.log("Socket connected:", socket.id);
+
+      if (!canJoinRoom) {
+        return;
+      }
+
+      console.log("Joining room:", roomId);
       socket.emit("join-room", { roomId });
+      hasJoinedRoomRef.current = true;
 
       if (isReconnect && latestCodeRef.current.trim()) {
         socket.emit("sync-code", {
@@ -497,10 +508,11 @@ function Room() {
         return;
       }
 
+      hasJoinedRoomRef.current = false;
       setIsReconnecting(true);
     };
 
-    if (socket.connected) {
+    if (socket.connected && isRoomValid && !hasJoinedRoomRef.current) {
       handleConnect();
     }
 
@@ -534,9 +546,8 @@ function Room() {
       socket.off("receive-output", handleReceiveOutput);
       socket.off("user-joined", handleUserJoined);
       socket.off("socket-error", handleSocketError);
-      disconnectSocket();
     };
-  }, [addToast, loadRoomDetails, logout, navigate, redirectToCollaboration, roomId, token, user?.name]);
+  }, [addToast, isRoomValid, loadRoomDetails, logout, navigate, redirectToCollaboration, roomId, token, user?.name]);
 
   const handleSendMessage = (message) => {
     const trimmedMessage = message.trim();
@@ -598,7 +609,6 @@ function Room() {
       const successMessage = response?.deleted ? "Room deleted" : "You left the room";
 
       setIsLeaveDialogOpen(false);
-      disconnectSocket();
       navigate("/collaboration", {
         state: {
           roomToast: {

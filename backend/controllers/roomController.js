@@ -283,7 +283,7 @@ export const getRoomDetails = async (req, res) => {
     });
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'Server error',
     });
   }
 };
