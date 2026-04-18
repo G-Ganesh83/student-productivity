@@ -19,7 +19,7 @@ function NavIconBtn({ label, badge, children, onClick }) {
       onClick={onClick}
       aria-label={label}
       title={label}
-        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 ease-out hover:border-slate-300 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.98] active:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-1"
+        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition-all duration-200 ease-out hover:border-slate-300 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.98] active:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-1"
     >
       {children}
       {badge > 0 && (
@@ -56,7 +56,7 @@ function SearchBar() {
       {/* Search icon */}
       <div className="absolute left-3.5 flex items-center pointer-events-none">
         <svg
-          className={`w-4 h-4 transition-colors duration-200 ${isFocused ? "text-sky-500" : "text-slate-400"}`}
+          className={`w-4 h-4 transition-colors duration-200 ${isFocused ? "text-sky-500" : "text-slate-500"}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -75,22 +75,22 @@ function SearchBar() {
         onBlur={() => setIsFocused(false)}
         className={`
           w-full rounded-2xl border px-0 py-3 pl-10 pr-16
-          text-sm font-medium text-slate-700 placeholder:text-slate-400
-          bg-white transition-all duration-200 ease-out
+          text-sm font-medium text-slate-700 placeholder:text-slate-500
+          transition-all duration-200 ease-out
           focus:outline-none focus:bg-white
           ${isFocused
             ? "border-sky-300 ring-4 ring-sky-100 shadow-sm"
-            : "border-slate-200 hover:border-slate-300 hover:bg-white"
+            : "border-slate-300/90 bg-slate-50/80 hover:border-slate-400 hover:bg-white"
           }
         `}
       />
 
       {/* ⌘K badge */}
       <div className={`absolute right-3 flex items-center gap-0.5 transition-opacity duration-150 ${isFocused ? "opacity-0" : "opacity-100"}`}>
-        <kbd className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-500 text-[10px] font-bold border border-slate-200 shadow-sm">
+        <kbd className="flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm">
           ⌘
         </kbd>
-        <kbd className="px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-500 text-[10px] font-bold border border-slate-200 shadow-sm">
+        <kbd className="rounded-md border border-slate-200 bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm">
           K
         </kbd>
       </div>
@@ -134,7 +134,7 @@ function AvatarMenu({ user, onLogout, onNavigate }) {
         {/* Name + role — hidden on smaller screens */}
         <div className="hidden xl:block text-left leading-tight">
           <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">{user?.name || "User"}</p>
-          <p className="text-[11px] text-slate-500 font-medium">{user?.email || "Signed in"}</p>
+          <p className="text-[11px] font-medium text-slate-600">{user?.email || "Signed in"}</p>
         </div>
 
         {/* Chevron */}
@@ -158,7 +158,7 @@ function AvatarMenu({ user, onLogout, onNavigate }) {
           {/* User info header */}
           <div className="px-4 py-3 border-b border-slate-100">
             <p className="text-sm font-bold text-slate-900">{user?.name || "User"}</p>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">{user?.email || "No email available"}</p>
+            <p className="mt-0.5 text-xs font-medium text-slate-600">{user?.email || "No email available"}</p>
           </div>
 
           {/* Menu items */}
@@ -264,8 +264,8 @@ function NotificationsPanel() {
                 <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.unread ? "bg-indigo-500" : "bg-transparent border border-slate-300"}`} />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-900 leading-snug">{n.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.body}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-1">{n.time}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{n.body}</p>
+                  <p className="mt-1 text-[10px] font-semibold text-slate-500">{n.time}</p>
                 </div>
               </button>
             ))}
@@ -273,7 +273,7 @@ function NotificationsPanel() {
 
           {/* Footer */}
           <div className="px-4 py-3 border-t border-slate-100 text-center">
-            <button className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+            <button className="text-xs font-semibold text-slate-600 transition-colors hover:text-slate-800">
               View all notifications
             </button>
           </div>
@@ -311,7 +311,7 @@ function TopNavbar({ onMobileMenuOpen }) {
           {/* Mobile hamburger */}
           <button
             onClick={onMobileMenuOpen}
-            className="lg:hidden flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-sky-300"
+            className="lg:hidden flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-sky-300"
             aria-label="Open navigation"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -323,7 +323,7 @@ function TopNavbar({ onMobileMenuOpen }) {
             <p className="font-display truncate text-[2rem] font-semibold leading-none tracking-tight text-slate-900">
               {meta.title}
             </p>
-            <p className="mt-1 hidden truncate text-sm font-normal text-slate-500 md:block">
+            <p className="mt-1 hidden truncate text-sm font-normal text-slate-600 md:block">
               {meta.subtitle}
             </p>
           </div>

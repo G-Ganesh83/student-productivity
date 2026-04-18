@@ -41,11 +41,11 @@ const FAQS = [
 
 function Help() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Help & Support</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="font-display text-4xl font-semibold leading-none tracking-tight text-slate-900">Guidance & support</h1>
+          <p className="mt-1 text-sm text-slate-600">
             Quick guidance for using LEARN EASY smoothly across tasks, resources, and collaboration rooms.
           </p>
         </div>
@@ -54,7 +54,7 @@ function Help() {
         </Button>
       </header>
 
-      <Card variant="brand" padding="lg">
+      <Card variant="default" padding="lg">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-700">Need a quick walkthrough?</p>
@@ -90,7 +90,7 @@ function Help() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold text-slate-900">{guide.title}</h3>
-              <p className="mt-2 text-sm leading-7 text-slate-500">{guide.description}</p>
+              <p className="mt-2 text-sm leading-7 text-slate-600">{guide.description}</p>
             </div>
           </Card>
         ))}
@@ -99,13 +99,13 @@ function Help() {
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Frequently asked questions</h2>
-          <p className="mt-1 text-sm text-slate-500">Short answers for the most common product and workflow questions.</p>
+          <p className="mt-1 text-sm text-slate-600">Short answers for the most common product and workflow questions.</p>
         </div>
         <div className="space-y-4">
           {FAQS.map((item) => (
             <Card key={item.question} variant="default" padding="md">
               <h3 className="text-base font-bold text-slate-900">{item.question}</h3>
-              <p className="mt-2 text-sm leading-7 text-slate-500">{item.answer}</p>
+              <p className="mt-2 text-sm leading-7 text-slate-600">{item.answer}</p>
             </Card>
           ))}
         </div>

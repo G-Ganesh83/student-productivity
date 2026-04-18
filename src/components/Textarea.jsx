@@ -26,7 +26,7 @@ function Textarea({
         required={required}
         className={`
           w-full px-4 py-3 text-sm text-slate-800 bg-white
-          border-2 rounded-xl font-medium placeholder:text-slate-400
+          border-2 rounded-xl font-medium placeholder:text-slate-500
           transition-all duration-150 resize-none input-focus-ring
           ${error
             ? "border-red-400 bg-red-50/30 focus:border-red-400"
@@ -44,7 +44,7 @@ function Textarea({
         </p>
       )}
       {hint && !error && (
-        <p className="mt-1.5 text-xs text-slate-500">{hint}</p>
+        <p className="mt-1.5 text-xs text-slate-600">{hint}</p>
       )}
     </div>
   );

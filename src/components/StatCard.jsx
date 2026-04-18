@@ -5,6 +5,8 @@ function StatCard({
   title,
   value,
   label,
+  helper,
+  progress,
   to,
   isLoading = false,
   iconClassName = "bg-sky-50 text-sky-600",
@@ -25,18 +27,31 @@ function StatCard({
   ) : (
     <>
       <div
-        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${iconClassName}`}
+        className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconClassName}`}
         aria-hidden="true"
       >
         {icon}
       </div>
 
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
+      <p className="mt-5 text-sm font-medium text-slate-600">{title}</p>
       <p className="mt-2 font-ui text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+      {helper ? (
+        <p className="mt-2 text-xs font-medium text-slate-600">{helper}</p>
+      ) : null}
+      {typeof progress === "number" ? (
+        <div className="mt-3">
+          <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-sky-500 transition-all duration-300"
+              style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
       <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="text-xs text-slate-400">{label}</p>
+        <p className="text-xs text-slate-500">{label}</p>
         {to ? (
-          <span className="font-ui text-xs font-medium text-slate-400 transition duration-200 group-hover:text-slate-700">
+          <span className="font-ui text-xs font-medium text-slate-500 transition duration-200 group-hover:text-slate-700">
             Open
           </span>
         ) : null}

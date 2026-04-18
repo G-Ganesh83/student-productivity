@@ -48,7 +48,7 @@ function Modal({ isOpen, onClose, title, children, size = "md", description }) {
           <div>
             <h2 className="text-lg font-bold text-slate-900">{title}</h2>
             {description && (
-              <p className="text-sm text-slate-500 mt-0.5">{description}</p>
+              <p className="mt-0.5 text-sm text-slate-600">{description}</p>
             )}
           </div>
           <button

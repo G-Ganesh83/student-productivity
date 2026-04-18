@@ -68,10 +68,10 @@ function AppLayout() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,#f8fbfe_100%)] flex">
       {/* ─── Desktop Sidebar ─────────────────── */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[276px] flex-col border-r border-slate-200/80 bg-[#F8FAFC] shadow-sidebar z-30">
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[284px] flex-col border-r border-slate-200/80 bg-[#F8FAFC] shadow-sidebar z-30">
         
         {/* Logo Area */}
-        <div className="px-6 pb-6 pt-7 flex-shrink-0">
+        <div className="px-6 pb-5 pt-6 flex-shrink-0">
           <BrandLogo
             to="/"
             onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
@@ -79,8 +79,8 @@ function AppLayout() {
         </div>
 
         {/* Navigation Group */}
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto scrollbar-thin">
-          <p className="px-4 pb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+        <nav className="flex-1 px-4 py-3.5 space-y-2 overflow-y-auto scrollbar-thin">
+          <p className="px-4 pb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">
             Workspace
           </p>
           {NAV_ITEMS.map((item) => {
@@ -100,7 +100,7 @@ function AppLayout() {
                   <div className="absolute left-2 top-1/2 h-6 w-px -translate-y-1/2 rounded-full bg-sky-400/90 shadow-[0_0_8px_rgba(56,189,248,0.14)]" />
                 )}
                 
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${
+                <span className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 ${
                   active
                     ? "bg-white/90 text-sky-600"
                     : "bg-white/70 text-slate-400 group-hover:bg-white group-hover:text-slate-600 group-hover:ring-1 group-hover:ring-slate-200/80"
@@ -114,10 +114,10 @@ function AppLayout() {
         </nav>
 
         {/* Bottom Actions */}
-        <div className="px-4 pb-6 pt-4 mt-auto flex-shrink-0">
+        <div className="mt-auto px-4 pb-5 pt-3 flex-shrink-0">
           <div className="rounded-3xl border border-slate-200 bg-white/85 px-4 py-4">
             <p className="font-ui text-sm font-semibold text-slate-900">Need help navigating?</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
+            <p className="mt-1 text-xs leading-5 text-slate-600">
               Visit Help for quick guidance on rooms, tasks, and resources.
             </p>
             <Link
@@ -199,7 +199,7 @@ function AppLayout() {
       )}
 
       {/* ─── Main Content ─────────────────────── */}
-      <main className="flex-1 lg:pl-[276px] min-w-0 flex flex-col">
+      <main className="flex-1 lg:pl-[284px] min-w-0 flex flex-col">
         {/* Premium top navbar */}
         <TopNavbar onMobileMenuOpen={() => setIsMobileOpen(true)} />
         <div className="flex-1 w-full bg-[radial-gradient(circle_at_top,_rgba(224,242,254,0.28),_rgba(255,255,255,0)_28%),linear-gradient(180deg,#ffffff_0%,#fcfdff_100%)] px-4 py-6 sm:px-6 lg:px-8 lg:py-8 xl:px-10 page-enter">

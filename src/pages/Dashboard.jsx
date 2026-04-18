@@ -152,11 +152,17 @@ function Dashboard() {
   }, [loadDashboard]);
 
   const stats = useMemo(() => {
+    const completionRate = taskStats.totalTasks
+      ? Math.round((taskStats.completedTasks / taskStats.totalTasks) * 100)
+      : 0;
+
     return [
       {
         title: "Tasks",
         value: String(taskStats.totalTasks),
         label: "All tasks",
+        helper: `+${Math.max(taskStats.pendingTasks, 0)} needing attention`,
+        progress: taskStats.totalTasks ? 100 : 0,
         to: "/productivity",
         iconClassName: "bg-sky-50 text-sky-600",
         icon: (
@@ -169,6 +175,10 @@ function Dashboard() {
         title: "Pending",
         value: String(taskStats.pendingTasks),
         label: "Need attention",
+        helper: taskStats.pendingTasks === 0 ? "All clear right now" : "Open items to tackle next",
+        progress: taskStats.totalTasks
+          ? Math.round((taskStats.pendingTasks / taskStats.totalTasks) * 100)
+          : 0,
         to: "/productivity",
         iconClassName: "bg-amber-50 text-amber-600",
         icon: (
@@ -181,6 +191,8 @@ function Dashboard() {
         title: "Completed",
         value: String(taskStats.completedTasks),
         label: "Finished",
+        helper: `${completionRate}% completed`,
+        progress: completionRate,
         to: "/productivity",
         iconClassName: "bg-emerald-50 text-emerald-600",
         icon: (
@@ -243,15 +255,15 @@ function Dashboard() {
     <div className="space-y-8">
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-slate-500">Welcome back, {user?.name || "Student"}</p>
+          <p className="text-sm text-slate-600">Welcome back, {user?.name || "Student"}</p>
           {isRetrying ? (
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
               Refreshing...
             </span>
           ) : null}
         </div>
         <h1 className="mt-2 font-display text-4xl font-semibold leading-none tracking-tight text-slate-900 sm:text-[2.8rem]">
-          Your Dashboard
+          Your workspace overview
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
           Here&apos;s a quick overview of your activity.
@@ -279,6 +291,8 @@ function Dashboard() {
             title={stat.title}
             value={stat.value}
             label={stat.label}
+            helper={stat.helper}
+            progress={stat.progress}
             to={stat.to}
             isLoading={showStatSkeleton}
             icon={stat.icon}
@@ -292,7 +306,7 @@ function Dashboard() {
           <h2 className="font-display text-3xl font-semibold leading-none tracking-tight text-slate-900">
             Quick Actions
           </h2>
-          <p className="mt-2 text-sm text-slate-500">Jump into the next thing you need to do.</p>
+          <p className="mt-2 text-sm text-slate-600">Jump into the next thing you need to do.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -300,12 +314,14 @@ function Dashboard() {
             <Link
               key={action.name}
               to={action.link}
-              className="group rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-card-hover"
+              className="group cursor-pointer rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.02] hover:shadow-card-hover"
             >
-              <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${action.iconClassName}`}>
+              <div className="flex flex-col items-center text-center">
+                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${action.iconClassName}`}>
                 {action.icon}
+                </div>
+                <p className="mt-4 font-ui text-sm font-medium text-slate-900">{action.name}</p>
               </div>
-              <p className="mt-4 font-ui text-sm font-medium text-slate-900">{action.name}</p>
             </Link>
           ))}
         </div>
@@ -316,7 +332,7 @@ function Dashboard() {
           <h2 className="font-display text-3xl font-semibold leading-none tracking-tight text-slate-900">
             Recent Activity
           </h2>
-          <p className="mt-2 text-sm text-slate-500">The latest updates from your workspace.</p>
+          <p className="mt-2 text-sm text-slate-600">The latest updates from your workspace.</p>
         </div>
 
         <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card">
@@ -330,7 +346,7 @@ function Dashboard() {
               ))}
             </div>
           ) : recentActivity.length > 0 ? (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-200/80">
               {recentActivity.map((item) => (
                 <Link
                   key={item.id}
@@ -338,20 +354,20 @@ function Dashboard() {
                   className="group flex items-start justify-between gap-4 rounded-2xl py-4 transition-all duration-200 ease-out first:pt-0 last:pb-0 hover:bg-slate-50/85"
                 >
                   <div>
-                    <p className="flex items-center gap-2 text-sm font-medium text-gray-700 transition duration-200 group-hover:text-slate-900">
+                    <p className="flex items-center gap-2 text-sm font-medium text-slate-800 transition duration-200 group-hover:text-slate-900">
                       <span className={`h-2 w-2 rounded-full ${item.indicatorClassName}`} aria-hidden="true" />
                       {item.title}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">{item.description}</p>
+                    <p className="mt-1 text-xs text-slate-600">{item.description}</p>
                   </div>
-                  <span className="shrink-0 text-xs text-gray-400">{formatRelativeTime(item.timestamp)}</span>
+                  <span className="shrink-0 text-xs text-slate-600">{formatRelativeTime(item.timestamp)}</span>
                 </Link>
               ))}
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-5 py-6">
               <p className="font-ui text-sm font-semibold text-slate-900">No activity yet</p>
-              <p className="mt-2 max-w-md text-sm text-slate-500">
+              <p className="mt-2 max-w-md text-sm text-slate-600">
                 Create your first task or open a collaboration room to start building momentum.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">

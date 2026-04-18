@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
-import CollaborationCard from "../components/CollaborationCard";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
-import Textarea from "../components/Textarea";
 import Badge from "../components/Badge";
 import ToastContainer from "../components/ToastContainer";
 import SearchInput from "../components/SearchInput";
@@ -17,7 +15,7 @@ const TYPE_CONFIG = {
         <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       </svg>
     ),
-    gradient: "from-red-500 to-pink-500",
+    gradient: "from-red-400 to-pink-400",
     bg: "from-red-50 to-pink-50",
     border: "border-red-100",
     badge: "danger",
@@ -29,7 +27,7 @@ const TYPE_CONFIG = {
         <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
       </svg>
     ),
-    gradient: "from-sky-500 to-cyan-500",
+    gradient: "from-sky-400 to-cyan-400",
     bg: "from-sky-50 to-cyan-50",
     border: "border-sky-100",
     badge: "info",
@@ -129,62 +127,63 @@ function Resources() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* ─── Header ──────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Resources</h1>
-          <p className="text-slate-500 text-sm mt-1">Store and organise your study materials</p>
+      <div className="space-y-4">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="font-display text-4xl font-semibold leading-none tracking-tight text-slate-900">Study library</h1>
+            <p className="mt-1 text-sm text-slate-600">Store and organise your study materials</p>
+          </div>
+          <Button onClick={openModal}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Add Resource
+          </Button>
         </div>
-        <Button onClick={openModal}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          Add Resource
-        </Button>
+
+        {resources.length > 0 && (
+          <div className="max-w-3xl">
+            <SearchInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title or tag…"
+            />
+            {searchQuery && filtered.length !== resources.length && (
+              <p className="mt-3 text-xs font-medium text-slate-600">
+                Showing <strong className="text-brand-600">{filtered.length}</strong> of <strong>{resources.length}</strong> resources
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      <Card variant="brand" padding="lg">
+      <Card variant="default" padding="lg" className="border-slate-200 bg-white/95 shadow-card">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-700">Study library</p>
-            <h2 className="mt-3 text-2xl font-bold text-slate-900">Keep useful notes, links, and references in one clean place.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Study library</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold leading-none tracking-tight text-slate-900">Keep useful notes, links, and references in one clean place.</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
               This module is intentionally lightweight so you can quickly save learning material, tag it clearly, and return to it during study sessions or collaboration rooms.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {resourceStats.map((item) => (
-              <div key={item.label} className={`rounded-2xl border px-4 py-4 ${item.tone}`}>
-                <p className="text-xs font-bold uppercase tracking-[0.16em]">{item.label}</p>
-                <p className="mt-2 text-2xl font-extrabold">{item.value}</p>
+              <div key={item.label} className={`rounded-3xl border px-4 py-4 ${item.tone}`}>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em]">{item.label}</p>
+                <p className="mt-2 font-ui text-2xl font-semibold">{item.value}</p>
               </div>
             ))}
           </div>
         </div>
       </Card>
 
-      {/* ─── Search ──────────────────────────── */}
-      {resources.length > 0 && (
-        <Card variant="default" padding="md">
-          <SearchInput
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by title or tag…"
-          />
-          {searchQuery && filtered.length !== resources.length && (
-            <p className="text-xs text-slate-500 mt-3 font-medium">
-              Showing <strong className="text-brand-600">{filtered.length}</strong> of <strong>{resources.length}</strong> resources
-            </p>
-          )}
-        </Card>
-      )}
-
       {/* ─── Empty States ────────────────────── */}
       {resources.length === 0 ? (
-        <Card variant="brand" padding="lg">
+        <Card variant="default" padding="lg">
           <div className="text-center py-8">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl gradient-brand text-white shadow-button">
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -192,7 +191,7 @@ function Resources() {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-slate-900">No resources yet</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500">
+            <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-600">
               Build a simple study library by saving your most useful links, notes, and PDFs here.
             </p>
             <Button className="mt-6" onClick={openModal}>
@@ -203,13 +202,13 @@ function Resources() {
       ) : filtered.length === 0 ? (
         <Card variant="subtle" padding="lg">
           <div className="text-center py-8">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-200 text-slate-500">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-200 text-slate-600">
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
             <h3 className="text-lg font-bold text-slate-900">No matching resources</h3>
-            <p className="mt-2 text-sm text-slate-500">Try a different keyword or clear the current search.</p>
+            <p className="mt-2 text-sm text-slate-600">Try a different keyword or clear the current search.</p>
             <Button variant="secondary" className="mt-5" onClick={() => setSearchQuery("")}>
               Clear Search
             </Button>
@@ -220,18 +219,18 @@ function Resources() {
           {filtered.map((resource) => {
             const cfg = TYPE_CONFIG[resource.type] || TYPE_CONFIG.link;
             return (
-              <Card key={resource.id} variant="default" padding="none" className="group overflow-hidden">
+              <Card key={resource.id} variant="default" padding="none" className="group overflow-hidden transition-all duration-200 ease-out hover:-translate-y-[2px] hover:shadow-card-hover">
                 {/* Type accent bar */}
-                <div className={`h-1 w-full bg-gradient-to-r ${cfg.gradient}`} />
+                <div className={`h-0.5 w-full bg-gradient-to-r ${cfg.gradient}`} />
 
-                <div className="p-5">
+                <div className="p-6">
                   {/* Header row */}
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center text-white shadow-button flex-shrink-0 group-hover:scale-105 transition-transform duration-200`}>
+                  <div className="mb-5 flex items-start gap-4">
+                    <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center text-white shadow-button flex-shrink-0 transition-transform duration-200 group-hover:scale-[1.03]`}>
                       {cfg.icon}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors leading-snug mb-1 truncate">
+                      <h3 className="mb-1.5 text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-brand-600 truncate">
                         {resource.title}
                       </h3>
                       <Badge variant={cfg.badge} size="xs">{cfg.label}</Badge>
@@ -244,7 +243,7 @@ function Resources() {
                       href={resource.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 mb-4 truncate font-medium"
+                      className="mb-5 flex items-center gap-1.5 truncate text-xs font-medium text-brand-600 hover:text-brand-700"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -253,7 +252,7 @@ function Resources() {
                       {resource.url}
                     </a>
                   ) : (
-                    <p className="text-xs text-slate-500 mb-4 font-medium flex items-center gap-1.5">
+                    <p className="mb-5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
@@ -263,7 +262,7 @@ function Resources() {
 
                   {/* Tags */}
                   {resource.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    <div className="mb-5 flex flex-wrap gap-1.5">
                       {resource.tags.map((tag, i) => (
                         <Badge key={i} variant="default" size="xs">{tag}</Badge>
                       ))}
@@ -271,8 +270,8 @@ function Resources() {
                   )}
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -281,14 +280,14 @@ function Resources() {
                     <div className="flex gap-2">
                       {resource.type === "link" && (
                         <a href={resource.url} target="_blank" rel="noopener noreferrer">
-                          <button className="px-3 py-1 text-xs font-bold text-brand-600 border border-brand-200 rounded-lg hover:bg-brand-50 transition-colors">
+                          <button className="rounded-xl border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50">
                             Open
                           </button>
                         </a>
                       )}
                       <button
                         onClick={() => handleDelete(resource.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                        className="rounded-xl p-1.5 text-slate-400 transition-all hover:bg-red-50 hover:text-red-600"
                         title="Delete"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

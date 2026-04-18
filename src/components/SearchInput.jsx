@@ -3,7 +3,7 @@ function SearchInput({ value, onChange, placeholder = "Search…", className = "
     <div className={`relative group ${className}`}>
       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
         <svg
-          className="h-4 w-4 text-slate-400 group-focus-within:text-brand-500 transition-colors"
+          className="h-4 w-4 text-slate-500 group-focus-within:text-brand-500 transition-colors"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -17,12 +17,12 @@ function SearchInput({ value, onChange, placeholder = "Search…", className = "
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="block w-full pl-11 pr-10 py-2.5 text-sm font-medium text-slate-700 placeholder:text-slate-400 bg-white border-2 border-slate-200 rounded-xl transition-all duration-150 input-focus-ring hover:border-slate-300"
+        className="block w-full rounded-xl border-2 border-slate-300 bg-slate-50/90 py-2.5 pl-11 pr-10 text-sm font-medium text-slate-800 placeholder:text-slate-500 transition-all duration-150 input-focus-ring hover:border-slate-400 hover:bg-white"
       />
       {value && (
         <button
           onClick={onClear || (() => onChange({ target: { value: "" } }))}
-          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-700 transition-colors"
           aria-label="Clear search"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

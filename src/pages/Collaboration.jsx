@@ -151,14 +151,14 @@ function Collaboration() {
   const isJoinDisabled = isJoining || !joinCode.trim();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* ─── Header ──────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Collaboration</h1>
-          <p className="text-slate-500 text-sm mt-1">Create or join rooms to code together</p>
+          <h1 className="font-display text-4xl font-semibold leading-none tracking-tight text-slate-900">Work together live</h1>
+          <p className="mt-1 text-sm text-slate-600">Create or join rooms to code together</p>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={openJoin}>
@@ -184,8 +184,8 @@ function Collaboration() {
         )}
 
         <CollaborationCard
-          title="Start a collaboration room"
-          description="Create a fresh room for your team or join an existing one with a room code. After entry, the app navigates using the room's MongoDB _id."
+          title="No rooms yet"
+          description="Create your first collaboration room or join an existing one with a room code. After entry, the app navigates using the room's MongoDB _id."
           primaryActionText="Create Room"
           secondaryActionText="Join Room"
           onPrimaryAction={openCreate}
