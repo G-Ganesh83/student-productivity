@@ -1,8 +1,12 @@
 import { io } from "socket.io-client";
 
+import { getStoredToken, isTokenExpired } from "../utils/auth";
+
 export const socket = io("http://localhost:8000", {
   autoConnect: false,
 });
+
+let activeSocketToken = null;
 
 socket.on("connect", () => {
   console.log("Socket connected:", socket.id);
@@ -12,12 +16,30 @@ socket.on("disconnect", () => {
   console.log("Socket disconnected");
 });
 
+socket.on("connect_error", (error) => {
+  console.error("Socket connection failed:", error.message);
+});
+
 export const connectSocket = (token) => {
-  if (!token) {
+  const nextToken = token || getStoredToken();
+
+  if (!nextToken || isTokenExpired(nextToken)) {
+    activeSocketToken = null;
+    socket.auth = {};
+    if (socket.connected) {
+      socket.disconnect();
+    }
     return socket;
   }
 
-  socket.auth = { token };
+  const tokenChanged = activeSocketToken && activeSocketToken !== nextToken;
+
+  activeSocketToken = nextToken;
+  socket.auth = { token: nextToken };
+
+  if (tokenChanged && socket.connected) {
+    socket.disconnect();
+  }
 
   if (!socket.connected) {
     socket.connect();
@@ -27,6 +49,9 @@ export const connectSocket = (token) => {
 };
 
 export const disconnectSocket = () => {
+  activeSocketToken = null;
+  socket.auth = {};
+
   if (socket.connected) {
     socket.disconnect();
   }

@@ -1,275 +1,293 @@
 import { Link } from "react-router-dom";
+import Hero from "../components/Hero";
+
+const FLOATING_CARDS = [
+  {
+    title: "Task Planner",
+    description: "Organize your day",
+    position: "-left-2 top-24",
+    animationClass: "float-card",
+  },
+  {
+    title: "Live Code Rooms",
+    description: "Code together instantly",
+    position: "right-0 top-10",
+    animationClass: "float-card float-card-delay",
+  },
+  {
+    title: "Shared Resources",
+    description: "All notes in one place",
+    position: "bottom-6 right-12",
+    animationClass: "float-card float-card-slow",
+  },
+];
 
 const FEATURES = [
   {
     icon: (
-      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6h11M9 12h11M9 18h11M5 6h.01M5 12h.01M5 18h.01" />
       </svg>
     ),
+    number: "01",
     title: "Productivity",
-    description: "Organize your tasks, set priorities, and track your progress. Stay on top of assignments and deadlines with an intuitive task management system.",
-    gradient: "from-brand-500 to-violet-500",
-    bg: "from-brand-50 to-violet-50",
-    border: "border-brand-100",
+    description: "Track assignments, deadlines, and weekly priorities with a planner that keeps student work visible and calm.",
+    iconBox: "bg-sky-50 text-sky-700",
   },
   {
     icon: (
-      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2h2m10 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m10 0H7" />
       </svg>
     ),
-    title: "Collaboration",
-    description: "Work together in real-time with a shared code editor, terminal, and integrated chat. Perfect for group projects and study sessions.",
-    gradient: "from-sky-500 to-cyan-500",
-    bg: "from-sky-50 to-cyan-50",
-    border: "border-sky-100",
+    number: "02",
+    title: "Collaboration Rooms",
+    description: "Open focused rooms for pair programming, debugging, and discussions with live code, chat, and presence signals.",
+    iconBox: "bg-indigo-50 text-indigo-700",
   },
   {
     icon: (
-      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.5v11m0-11c-1.2-.84-2.57-1.25-4.1-1.25C6.15 5.25 4.58 5.66 3.4 6.5v11c1.18-.84 2.75-1.25 4.5-1.25 1.53 0 2.9.41 4.1 1.25m0-11c1.2-.84 2.57-1.25 4.1-1.25 1.75 0 3.32.41 4.5 1.25v11c-1.18-.84-2.75-1.25-4.5-1.25-1.53 0-2.9.41-4.1 1.25" />
       </svg>
     ),
+    number: "03",
     title: "Resources",
-    description: "Store and organize your study materials, notes, PDFs, and links. Everything you need, accessible from anywhere, anytime.",
-    gradient: "from-emerald-500 to-teal-500",
-    bg: "from-emerald-50 to-teal-50",
-    border: "border-emerald-100",
+    description: "Keep notes, links, PDFs, and supporting material together so study sessions stay streamlined instead of scattered.",
+    iconBox: "bg-emerald-50 text-emerald-700",
   },
 ];
 
 const COLLAB_FEATURES = [
-  "Shared code editor with syntax highlighting",
-  "Integrated terminal for running code",
-  "Real-time chat and voice controls",
-  "See who's online and active",
+  "Shared editor with live cursors and synced code changes",
+  "Built-in room chat for quick decisions and explanations",
+  "Presence indicators to see who is active right now",
+  "Instant output feedback for testing ideas together",
 ];
 
 const TECH = [
-  { name: "React 19", sub: "UI Framework" },
-  { name: "Vite", sub: "Build Tool" },
-  { name: "Tailwind CSS", sub: "Styling" },
-  { name: "JavaScript", sub: "Language" },
-];
-
-const STATS = [
-  { value: "10K+", label: "Active Students" },
-  { value: "50K+", label: "Tasks Completed" },
-  { value: "5K+", label: "Collab Rooms" },
+  { badge: "Frontend", badgeClass: "bg-sky-50 text-sky-700", name: "React 19", sub: "Fast interface and smooth state updates" },
+  { badge: "Backend", badgeClass: "bg-indigo-50 text-indigo-700", name: "Node.js + Express", sub: "Reliable APIs and room orchestration" },
+  { badge: "Database", badgeClass: "bg-emerald-50 text-emerald-700", name: "MongoDB", sub: "Flexible storage for users, tasks, and rooms" },
+  { badge: "Realtime", badgeClass: "bg-slate-100 text-slate-700", name: "Socket.IO", sub: "Instant collaboration events and room sync" },
 ];
 
 function Landing() {
   return (
-    <div className="overflow-x-hidden">
-      {/* ─── Hero ─────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-white via-brand-50/40 to-violet-50/50 py-24 lg:py-32 overflow-hidden">
-        {/* Blobs */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-brand-200/30 to-violet-200/20 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-sky-200/30 to-cyan-200/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+    <div className="overflow-x-hidden bg-[#F8FAFC] text-slate-900">
+      <Hero floatingCards={FLOATING_CARDS} />
 
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 border border-brand-200 mb-8">
-            <span className="w-2 h-2 rounded-full gradient-brand" />
-            <span className="text-sm font-semibold text-brand-700">Built for Students, By Students</span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight mb-6">
-            <span className="text-slate-900">Study Smarter,</span>
-            <br />
-            <span className="text-gradient-brand">Not Harder</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            The all-in-one platform for college students to manage tasks, collaborate on projects,
-            and access learning resources — all in one place.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link to="/dashboard">
-              <button className="gradient-brand text-white font-bold px-8 py-3.5 rounded-xl text-base shadow-button hover:shadow-button-hover hover:-translate-y-0.5 transition-all duration-200">
-                Get Started Free →
-              </button>
-            </Link>
-            <a href="#features">
-              <button className="bg-white text-slate-700 font-semibold px-8 py-3.5 rounded-xl text-base border border-slate-200 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200">
-                See Features
-              </button>
-            </a>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-            {STATS.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold text-gradient-brand">{s.value}</p>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{s.label}</p>
+      <section className="bg-[#F8FAFC] pb-18 pt-4">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 text-white shadow-[0_24px_80px_-40px_rgba(15,23,42,0.55)]">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-2">
+                  <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                  <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                  <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+                </div>
+                <span className="font-ui text-sm font-medium text-slate-300">main.py — LEARN EASY Room #A3F9</span>
               </div>
-            ))}
+              <div className="rounded-full border border-emerald-900 bg-emerald-950/70 px-3 py-1 text-xs font-ui font-semibold text-emerald-300">
+                3 online
+              </div>
+            </div>
+
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.55fr)_320px]">
+              <div className="border-b border-white/10 lg:border-b-0 lg:border-r lg:border-white/10">
+                <div className="grid grid-cols-[52px_minmax(0,1fr)] px-4 py-5 font-mono text-[0.94rem] leading-8 sm:px-6">
+                  <div className="select-none border-r border-white/10 pr-4 text-right text-slate-500">
+                    <div>1</div>
+                    <div>2</div>
+                    <div>3</div>
+                    <div>4</div>
+                    <div>5</div>
+                    <div>6</div>
+                    <div>7</div>
+                    <div>8</div>
+                    <div>9</div>
+                    <div>10</div>
+                  </div>
+                  <div className="overflow-x-auto pl-4 text-slate-100">
+                    <div><span className="text-violet-300">def</span> <span className="text-sky-300">find_max</span>(scores):</div>
+                    <div>    best = scores[<span className="text-amber-300">0</span>]</div>
+                    <div>    <span className="text-violet-300">for</span> score <span className="text-violet-300">in</span> scores[<span className="text-amber-300">1</span>:]:</div>
+                    <div>        <span className="text-violet-300">if</span> score &gt; best:</div>
+                    <div>            best = score</div>
+                    <div>    <span className="text-violet-300">return</span> best</div>
+                    <div><span className="text-slate-500"># Weekly quiz scores from the room</span></div>
+                    <div>marks = [<span className="text-amber-300">72</span>, <span className="text-amber-300">88</span>, <span className="text-amber-300">91</span>, <span className="text-amber-300">84</span>]</div>
+                    <div>highest = <span className="text-sky-300">find_max</span>(marks)</div>
+                    <div><span className="text-sky-300">print</span>(<span className="text-emerald-300">"Highest score:"</span>, highest)</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col bg-slate-900/70">
+                <div className="border-b border-white/10 px-5 py-4">
+                  <p className="font-ui text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Team Chat</p>
+                </div>
+                <div className="flex-1 space-y-4 px-5 py-5 text-sm">
+                  <div className="max-w-[88%] rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="mb-1 font-ui text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-300">Priya</p>
+                    <p className="text-slate-200">Let&apos;s keep the example simple so everyone in the room can follow it fast.</p>
+                  </div>
+                  <div className="ml-auto max-w-[88%] rounded-2xl border border-sky-900/60 bg-sky-500/10 px-4 py-3">
+                    <p className="mb-1 font-ui text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-300">Arjun</p>
+                    <p className="text-slate-100">Perfect. I&apos;ll explain the loop while you run the output.</p>
+                  </div>
+                  <div className="max-w-[88%] rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="mb-1 font-ui text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-slate-300">You</p>
+                    <p className="text-slate-200">Done. We can keep using this room for the next problem set too.</p>
+                  </div>
+                </div>
+                <div className="border-t border-white/10 bg-black/30 px-5 py-4 font-mono text-sm text-emerald-300">
+                  &gt; Highest score: 91
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── Features ─────────────────────────── */}
-      <section id="features" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Features</p>
-            <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-4">
-              Everything You Need to Succeed
+      <section id="features" className="border-b border-slate-200/80 bg-[#F8FAFC] py-20 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[34rem]">
+            <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">What&apos;s inside</p>
+            <h2 className="mt-4 max-w-[10ch] font-display text-4xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
+              Three modules. One focused platform.
             </h2>
-            <p className="text-lg text-slate-500">
-              Powerful tools designed specifically for student productivity and collaboration.
+            <p className="mt-5 text-[1.02rem] leading-8 text-slate-500">
+              Everything is designed to reduce tool-switching and keep the student workflow calm, quick, and collaborative.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className={`relative group bg-gradient-to-br ${f.bg} border ${f.border} rounded-2xl p-8 hover-lift overflow-hidden transition-all duration-200`}
+          <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-200/70">
+            <div className="grid gap-px lg:grid-cols-3">
+              {FEATURES.map((feature) => (
+                <article key={feature.title} className="bg-white px-6 py-8 sm:px-8">
+                  <div className="font-display text-[3.4rem] leading-none tracking-[-0.05em] text-slate-200">
+                    {feature.number}
+                  </div>
+                  <div className={`mt-8 flex h-11 w-11 items-center justify-center rounded-2xl ${feature.iconBox}`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="mt-8 font-ui text-xl font-semibold tracking-[-0.02em] text-slate-900">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 max-w-sm text-sm leading-7 text-slate-500">
+                    {feature.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="collaboration" className="bg-slate-950 py-20 text-white lg:py-24">
+        <div className="mx-auto grid max-w-6xl gap-14 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:px-8">
+          <div className="max-w-[34rem]">
+            <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-300/90">Collaboration</p>
+            <h2 className="mt-4 font-display text-4xl leading-[0.95] tracking-[-0.04em] text-white sm:text-5xl">
+              Code together, share context, move faster.
+            </h2>
+            <p className="mt-5 text-[1.02rem] leading-8 text-slate-300">
+              LEARN EASY is built for problem-solving sessions, pair programming, and project teamwork without the mess of scattered tools.
+            </p>
+
+            <ul className="mt-10 space-y-4">
+              {COLLAB_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <span className="mt-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
+                  </span>
+                  <span className="text-sm leading-7 text-slate-300">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-10">
+              <Link
+                to="/collaboration"
+                className="font-ui inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-white hover:text-slate-950"
               >
-                <div className={`absolute -top-8 -right-8 w-28 h-28 bg-gradient-to-br ${f.gradient} opacity-[0.07] rounded-full`} />
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.gradient} flex items-center justify-center text-white shadow-button mb-6 group-hover:scale-105 transition-transform duration-200`}>
-                  {f.icon}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{f.title}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">{f.description}</p>
-              </div>
-            ))}
+                Explore collaboration
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
 
-      {/* ─── Collaboration Preview ─────────────── */}
-      <section className="py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left text */}
-            <div>
-              <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-4">Collaboration</p>
-              <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-5">
-                Real-Time Collaboration,
-                <br />
-                <span className="text-gradient-brand">Made Simple</span>
-              </h2>
-              <p className="text-lg text-slate-500 mb-8">
-                Code together, share terminals, and communicate seamlessly. Our collaboration
-                rooms bring everything you need for group work into one unified interface.
-              </p>
-              <ul className="space-y-4">
-                {COLLAB_FEATURES.map((feat) => (
-                  <li key={feat} className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full gradient-success flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-slate-700 font-medium">{feat}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-10">
-                <Link to="/collaboration">
-                  <button className="gradient-brand text-white font-bold px-6 py-3 rounded-xl shadow-button hover:shadow-button-hover hover:-translate-y-0.5 transition-all duration-200 text-sm">
-                    Try Collaboration →
-                  </button>
-                </Link>
+          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-36px_rgba(14,165,233,0.25)]">
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div className="flex -space-x-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-slate-950 bg-sky-200 text-sm font-ui font-semibold text-slate-950">P</div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-slate-950 bg-indigo-200 text-sm font-ui font-semibold text-slate-950">A</div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-slate-950 bg-emerald-200 text-sm font-ui font-semibold text-slate-950">R</div>
+              </div>
+              <div className="text-right">
+                <p className="font-ui text-sm font-semibold text-white">3 members editing</p>
+                <span className="mt-2 inline-flex rounded-full border border-emerald-900 bg-emerald-950/70 px-3 py-1 font-ui text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+                  Live
+                </span>
               </div>
             </div>
 
-            {/* Right preview card */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-200/30 to-violet-200/20 rounded-3xl blur-2xl" />
-              <div className="relative bg-white rounded-2xl shadow-panel border border-slate-100 p-6 overflow-hidden">
-                {/* Window header */}
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-amber-400" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="text-xs font-semibold text-slate-400">main.js — StudyHub Room</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full pulse-dot" />
-                    <span className="text-[11px] font-bold text-emerald-700">3 online</span>
-                  </div>
-                </div>
+            <div className="mt-6 space-y-3 rounded-[1.25rem] border border-white/10 bg-black/20 p-5 font-mono text-sm">
+              <div><span className="text-violet-300">def</span> <span className="text-sky-300">bubble_sort</span>(arr):</div>
+              <div>    <span className="text-violet-300">for</span> i <span className="text-violet-300">in</span> <span className="text-sky-300">range</span>(<span className="text-sky-300">len</span>(arr)):</div>
+              <div>        <span className="text-violet-300">for</span> j <span className="text-violet-300">in</span> <span className="text-sky-300">range</span>(<span className="text-sky-300">len</span>(arr) - i - <span className="text-amber-300">1</span>):</div>
+              <div>            <span className="text-violet-300">if</span> arr[j] &gt; arr[j + <span className="text-amber-300">1</span>]:</div>
+              <div>                arr[j], arr[j + <span className="text-amber-300">1</span>] = arr[j + <span className="text-amber-300">1</span>], arr[j]</div>
+              <div>    <span className="text-violet-300">return</span> arr</div>
+            </div>
 
-                {/* Code block */}
-                <div className="bg-[#1e1e2e] rounded-xl p-5 font-mono text-sm mb-4">
-                  <div className="text-[#6272a4] mb-2 text-xs">// Collaboration room — shared editor</div>
-                  <div>
-                    <span className="text-[#ff79c6]">function </span>
-                    <span className="text-[#50fa7b]">greet</span>
-                    <span className="text-[#f8f8f2]">(</span>
-                    <span className="text-[#ffb86c]">name</span>
-                    <span className="text-[#f8f8f2]">) {"{"}</span>
-                  </div>
-                  <div className="ml-5">
-                    <span className="text-[#ff79c6]">return </span>
-                    <span className="text-[#f1fa8c]">{"`Hello, ${name}!`"}</span>
-                    <span className="text-[#f8f8f2]">;</span>
-                  </div>
-                  <div className="text-[#f8f8f2]">{"}"}</div>
-                </div>
-
-                {/* Terminal */}
-                <div className="bg-[#0c0c0c] rounded-xl px-4 py-3 font-mono text-xs">
-                  <span className="text-[#0dbc79]">➜</span>
-                  <span className="text-[#e06c75] ml-2">~</span>
-                  <span className="text-[#61afef] ml-1">$</span>
-                  <span className="text-[#abb2bf] ml-2">node main.js</span>
-                </div>
-              </div>
+            <div className="mt-5 rounded-[1rem] border border-emerald-900/60 bg-emerald-950/70 px-4 py-3 font-mono text-sm text-emerald-300">
+              &gt; [12, 23, 31, 45, 56]
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── Tech Stack ──────────────────────── */}
-      <section id="tech" className="py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-sm font-bold uppercase tracking-widest text-brand-600 mb-3">Technology</p>
-            <h2 className="text-4xl font-bold text-slate-900 tracking-tight">
-              Built with Modern Tech
+      <section id="tech" className="border-t border-slate-200 bg-white py-20 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[34rem]">
+            <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Tech Stack</p>
+            <h2 className="mt-4 max-w-[11ch] font-display text-4xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
+              Built on modern tools that students already trust.
             </h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {TECH.map((t) => (
-              <div key={t.name} className="group bg-white border border-slate-100 rounded-2xl p-6 shadow-card text-center hover-lift transition-all duration-200">
-                <p className="text-base font-bold text-gradient-brand mb-1 group-hover:scale-105 transition-transform inline-block">{t.name}</p>
-                <p className="text-xs text-slate-500 font-medium">{t.sub}</p>
+
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {TECH.map((item) => (
+              <div key={item.name} className="rounded-[1.4rem] border border-slate-200 bg-slate-50/70 p-6">
+                <span className={`font-ui inline-flex rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.22em] ${item.badgeClass}`}>
+                  {item.badge}
+                </span>
+                <h3 className="mt-6 font-ui text-xl font-semibold tracking-[-0.02em] text-slate-900">
+                  {item.name}
+                </h3>
+                <p className="mt-2 text-sm leading-7 text-slate-500">{item.sub}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── CTA ──────────────────────────────── */}
-      <section className="py-24 gradient-brand relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
-        </div>
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-5 tracking-tight">
-            Ready to Boost Your Productivity?
+      <section className="border-t border-slate-200 bg-[#F8FAFC] py-20 lg:py-24">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+          <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Start now</p>
+          <h2 className="mt-4 font-display text-4xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
+            Ready to study smarter with one calm workspace?
           </h2>
-          <p className="text-lg text-brand-100 mb-10 leading-relaxed">
-            Join thousands of students who are already using StudyHub to stay
-            organized and collaborate effectively.
+          <p className="mx-auto mt-5 max-w-xl text-[1.02rem] leading-8 text-slate-500">
+            Create your account, open a room, and keep planning, coding, and course material connected from day one.
           </p>
-          <Link to="/dashboard">
-            <button className="bg-white text-brand-700 font-bold px-10 py-4 rounded-xl text-base shadow-2xl hover:-translate-y-0.5 hover:shadow-2xl transition-all duration-200">
-              Start Free Trial →
-            </button>
+          <Link
+            to="/register"
+            className="font-ui mt-8 inline-flex rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-button transition duration-200 hover:scale-[1.02] hover:bg-slate-800"
+          >
+            Create your account
           </Link>
         </div>
       </section>

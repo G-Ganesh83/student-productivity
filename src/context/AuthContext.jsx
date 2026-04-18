@@ -1,54 +1,116 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { setApiAuthToken } from "../services/api";
+import { setApiAuthToken, setAuthFailureHandler } from "../services/api";
 import { connectSocket, disconnectSocket } from "../services/socket";
+import {
+  clearStoredAuth,
+  getStoredToken,
+  getStoredUser,
+  getTokenExpiryDelay,
+  isTokenExpired,
+  storeAuth,
+} from "../utils/auth";
 
 const AuthContext = createContext(null);
 
+const getInitialAuthState = () => {
+  const token = getStoredToken();
+
+  if (!token) {
+    clearStoredAuth();
+    return {
+      token: null,
+      user: null,
+      isAuthenticated: false,
+    };
+  }
+
+  return {
+    token,
+    user: getStoredUser(),
+    isAuthenticated: true,
+  };
+};
+
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem("user");
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState(() =>
-    Boolean(localStorage.getItem("token"))
+  const [authState, setAuthState] = useState(getInitialAuthState);
+  const { token, user, isAuthenticated } = authState;
+
+  const logout = useCallback(() => {
+    clearStoredAuth();
+    disconnectSocket();
+    setApiAuthToken(null);
+    setAuthState({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+    });
+  }, []);
+
+  const login = useCallback(
+    (nextToken, nextUser) => {
+      if (!nextToken || isTokenExpired(nextToken)) {
+        window.setTimeout(() => {
+          logout();
+        }, 0);
+        return;
+      }
+
+      storeAuth(nextToken, nextUser);
+      setAuthState({
+        token: nextToken,
+        user: nextUser || null,
+        isAuthenticated: true,
+      });
+    },
+    [logout]
   );
 
   useEffect(() => {
     setApiAuthToken(token);
 
-    if (token) {
-      connectSocket(token);
-    } else {
+    if (!token) {
       disconnectSocket();
+      return;
     }
-  }, [token]);
 
-  const login = (nextToken, nextUser) => {
-    localStorage.setItem("token", nextToken);
-    if (nextUser) {
-      localStorage.setItem("user", JSON.stringify(nextUser));
+    connectSocket(token);
+  }, [logout, token]);
+
+  useEffect(() => {
+    setAuthFailureHandler(logout);
+
+    return () => {
+      setAuthFailureHandler(null);
+    };
+  }, [logout]);
+
+  useEffect(() => {
+    if (!token) {
+      return undefined;
     }
-    setToken(nextToken);
-    setUser(nextUser || null);
-    setIsAuthenticated(true);
-    connectSocket(nextToken);
-  };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    disconnectSocket();
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-  };
+    const expiryDelay = getTokenExpiryDelay(token);
+
+    if (expiryDelay <= 0) {
+      const timeoutId = window.setTimeout(() => {
+        logout();
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      logout();
+    }, expiryDelay);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [logout, token]);
 
   const value = useMemo(
     () => ({
@@ -58,7 +120,7 @@ export function AuthProvider({ children }) {
       login,
       logout,
     }),
-    [token, user, isAuthenticated]
+    [isAuthenticated, login, logout, token, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

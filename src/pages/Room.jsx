@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
 import ToastContainer from "../components/ToastContainer";
+import { useAuth } from "../context/AuthContext";
 import { getCodeExecutionError, runCode as runCodeApi } from "../api/codeApi";
 import { getApiErrorMessage, getRoomDetails, leaveRoom } from "../api/roomApi";
 import { connectSocket, disconnectSocket, getSocket } from "../socket/socket";
+import { decodeTokenPayload } from "../utils/auth";
 
 function Room() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { logout, token } = useAuth();
   const nextIdRef = useRef(0);
   const latestCodeRef = useRef("");
   const codeChangeTimeoutRef = useRef(null);
@@ -34,16 +37,19 @@ function Room() {
   const [isRunning, setIsRunning] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  const getNextId = () => {
+  const getNextId = useCallback(() => {
     nextIdRef.current += 1;
     return nextIdRef.current;
-  };
+  }, []);
 
-  const addToast = (message, type = "success") => {
+  const addToast = useCallback((message, type = "success") => {
     const id = getNextId();
     setToasts((p) => [...p, { id, message, type }]);
-  };
-  const removeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
+  }, [getNextId]);
+
+  const removeToast = useCallback((id) => {
+    setToasts((p) => p.filter((t) => t.id !== id));
+  }, []);
 
   useEffect(() => {
     latestCodeRef.current = code;
@@ -115,27 +121,22 @@ function Room() {
     return () => {
       isMounted = false;
     };
-  }, [roomId]);
+  }, [addToast, roomId]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
     if (!token) {
+      currentUserIdRef.current = null;
       return undefined;
     }
 
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      currentUserIdRef.current = payload.id || payload._id || null;
-    } catch {
-      currentUserIdRef.current = null;
-    }
+    const payload = decodeTokenPayload(token);
+    currentUserIdRef.current = payload?.id || payload?._id || null;
 
     return undefined;
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    connectSocket();
+    connectSocket(token);
     const socket = getSocket();
 
     const normalizeTime = (timestamp) =>
@@ -241,12 +242,26 @@ function Room() {
 
     const handleSocketError = (error) => {
       console.error(error);
-      const id = getNextId();
-      setToasts((prev) => [
-        ...prev,
-        { id, message: error.message || "Something went wrong", type: "error" },
-      ]);
+      addToast(error.message || "Something went wrong", "error");
       setLoading(false);
+    };
+
+    const handleConnectError = (error) => {
+      const message = error?.message || "Unable to connect to the collaboration server.";
+
+      setLoading(false);
+      setIsReconnecting(false);
+      addToast(
+        message === "Token expired" || message === "Invalid token"
+          ? "Session expired. Please sign in again."
+          : message,
+        "error"
+      );
+
+      if (message === "Token expired" || message === "Invalid token") {
+        logout();
+        navigate("/login", { replace: true });
+      }
     };
 
     const handleDisconnect = () => {
@@ -260,6 +275,7 @@ function Room() {
 
     socket.off("connect", handleConnect);
     socket.off("disconnect", handleDisconnect);
+    socket.off("connect_error", handleConnectError);
     socket.off("receive-message", handleReceiveMessage);
     socket.off("receive-code", handleReceiveCode);
     socket.off("receive-output", handleReceiveOutput);
@@ -268,6 +284,7 @@ function Room() {
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
     socket.on("receive-message", handleReceiveMessage);
     socket.on("receive-code", handleReceiveCode);
     socket.on("receive-output", handleReceiveOutput);
@@ -280,6 +297,7 @@ function Room() {
       }
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
       socket.off("receive-message", handleReceiveMessage);
       socket.off("receive-code", handleReceiveCode);
       socket.off("receive-output", handleReceiveOutput);
@@ -287,7 +305,7 @@ function Room() {
       socket.off("socket-error", handleSocketError);
       disconnectSocket();
     };
-  }, [roomId]);
+  }, [addToast, logout, navigate, roomId, token]);
 
   const handleSendMessage = (message) => {
     const trimmedMessage = message.trim();

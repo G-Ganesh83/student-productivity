@@ -63,6 +63,11 @@ const initializeSocketManager = (io) => {
       next();
     } catch (error) {
       console.error(`Socket authentication failed: ${error.message}`);
+      if (error.name === 'TokenExpiredError') {
+        next(new Error('Token expired'));
+        return;
+      }
+
       next(new Error('Invalid token'));
     }
   });
