@@ -10,8 +10,13 @@ function Register() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const normalizedForm = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password.trim(),
+    };
 
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+    if (!normalizedForm.name || !normalizedForm.email || !normalizedForm.password) {
       setError("Name, email, and password are required");
       return;
     }
@@ -19,7 +24,7 @@ function Register() {
     try {
       setError("");
       setIsLoading(true);
-      await registerUser(form);
+      await registerUser(normalizedForm);
       navigate("/login");
     } catch (requestError) {
       setError(requestError.response?.data?.message || requestError.message || "Registration failed");

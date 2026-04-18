@@ -16,8 +16,12 @@ function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const normalizedForm = {
+      email: form.email.trim(),
+      password: form.password.trim(),
+    };
 
-    if (!form.email.trim() || !form.password.trim()) {
+    if (!normalizedForm.email || !normalizedForm.password) {
       setError("Email and password are required");
       return;
     }
@@ -26,7 +30,7 @@ function Login() {
       setError("");
       setIsLoading(true);
 
-      const response = await loginUser(form);
+      const response = await loginUser(normalizedForm);
       const token = response.data?.token || response.token;
       const user = response.data?.user || response.user;
 

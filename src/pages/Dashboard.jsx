@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import Card from "../components/Card";
-import { getRooms } from "../api/roomApi";
-import { getTasks } from "../api/taskApi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Link, useNavigate } from "react-router-dom";
+import StatCard from "../components/StatCard";
 import { useAuth } from "../context/AuthContext";
+import {
+  getCachedDashboardData,
+  getDashboardData,
+  getDashboardErrorMessage,
+} from "../services/dashboardService";
 
 const QUICK_ACTIONS = [
   {
-    name: "Add Task",
-    desc: "Create a new task",
+    name: "Create Task",
     link: "/productivity",
-    gradient: "from-indigo-500 to-violet-500",
-    bg: "from-indigo-50 to-violet-50",
-    border: "border-indigo-100",
+    iconClassName: "bg-sky-50 text-sky-600",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -21,11 +22,8 @@ const QUICK_ACTIONS = [
   },
   {
     name: "Create Room",
-    desc: "Start a session",
     link: "/collaboration",
-    gradient: "from-sky-500 to-indigo-500",
-    bg: "from-sky-50 to-indigo-50",
-    border: "border-sky-100",
+    iconClassName: "bg-indigo-50 text-indigo-600",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -33,206 +31,347 @@ const QUICK_ACTIONS = [
     ),
   },
   {
-    name: "Account Settings",
-    desc: "Update your profile",
-    link: "/settings",
-    gradient: "from-amber-500 to-orange-500",
-    bg: "from-amber-50 to-orange-50",
-    border: "border-amber-100",
+    name: "Join Room",
+    link: "/collaboration",
+    iconClassName: "bg-emerald-50 text-emerald-600",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
       </svg>
     ),
   },
   {
-    name: "Help Center",
-    desc: "Get support",
-    link: "/help",
-    gradient: "from-emerald-500 to-teal-500",
-    bg: "from-emerald-50 to-teal-50",
-    border: "border-emerald-100",
+    name: "Upload Resource",
+    link: "/resources",
+    iconClassName: "bg-violet-50 text-violet-600",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
       </svg>
     ),
   },
 ];
 
+const getEntityId = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return value._id || value.id || "";
+};
+
+const formatRelativeTime = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const timestamp = new Date(value);
+
+  if (Number.isNaN(timestamp.getTime())) {
+    return "";
+  }
+
+  return formatDistanceToNow(timestamp, { addSuffix: true });
+};
+
 function Dashboard() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [taskStats, setTaskStats] = useState({
+    totalTasks: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
+  });
+  const [status, setStatus] = useState("loading");
+  const [hasFetched, setHasFetched] = useState(false);
   const [error, setError] = useState("");
+  const isLoading = status === "loading";
+  const showStatSkeleton = isLoading && !hasFetched;
+  const isRetrying = isLoading && hasFetched;
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadDashboard = async () => {
-      setIsLoading(true);
-      setError("");
-
-      try {
-        const [taskResponse, roomResponse] = await Promise.all([getTasks(), getRooms()]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setTasks(taskResponse?.data || []);
-        setRooms(roomResponse || []);
-      } catch (requestError) {
-        if (!isMounted) {
-          return;
-        }
-
-        setError(requestError.response?.data?.message || "Unable to load dashboard data.");
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadDashboard();
-
-    return () => {
-      isMounted = false;
-    };
+  const applyDashboardData = useCallback((dashboardData) => {
+    setTasks(dashboardData.tasks);
+    setRooms(dashboardData.rooms);
+    setTaskStats(dashboardData.stats);
   }, []);
 
-  const stats = useMemo(() => {
-    const completedTasks = tasks.filter((task) => task.status === "completed").length;
-    const pendingTasks = tasks.filter((task) => task.status !== "completed").length;
-    const activeRooms = rooms.length;
+  const loadDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setStatus("loading");
+    }
 
+    setError("");
+
+    try {
+      const dashboardData = await getDashboardData();
+
+      applyDashboardData(dashboardData);
+      setStatus("success");
+    } catch (requestError) {
+      console.error(requestError);
+
+      if (requestError?.response?.status === 401) {
+        logout();
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      setError(getDashboardErrorMessage(requestError));
+      setStatus("error");
+    } finally {
+      setHasFetched(true);
+    }
+  }, [applyDashboardData, logout, navigate]);
+
+  useEffect(() => {
+    const cachedDashboardData = getCachedDashboardData();
+
+    if (cachedDashboardData) {
+      applyDashboardData(cachedDashboardData);
+      setStatus("success");
+      setHasFetched(true);
+    }
+
+    loadDashboard({ silent: Boolean(cachedDashboardData) });
+  }, [applyDashboardData, loadDashboard]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadDashboard({ silent: true });
+    }, 30 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [loadDashboard]);
+
+  const stats = useMemo(() => {
     return [
       {
         title: "Tasks",
-        value: String(completedTasks),
-        total: `of ${tasks.length}`,
-        label: "Completed",
-        link: "/productivity",
-        gradient: "from-indigo-500 to-violet-500",
-        bg: "from-indigo-50 to-violet-50",
-        border: "border-indigo-100",
-        textColor: "text-indigo-600",
+        value: String(taskStats.totalTasks),
+        label: "All tasks",
+        to: "/productivity",
+        iconClassName: "bg-sky-50 text-sky-600",
         icon: (
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
         ),
       },
       {
-        title: "Pending Tasks",
-        value: String(pendingTasks),
-        total: `${tasks.length} total`,
-        label: "Still in progress",
-        link: "/productivity",
-        gradient: "from-amber-500 to-orange-500",
-        bg: "from-amber-50 to-orange-50",
-        border: "border-amber-100",
-        textColor: "text-amber-600",
+        title: "Pending",
+        value: String(taskStats.pendingTasks),
+        label: "Need attention",
+        to: "/productivity",
+        iconClassName: "bg-amber-50 text-amber-600",
         icon: (
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
       },
       {
-        title: "Rooms",
-        value: String(activeRooms),
-        total: activeRooms === 1 ? "1 joined room" : `${activeRooms} joined rooms`,
-        label: "Collaboration spaces",
-        link: "/collaboration",
-        gradient: "from-sky-500 to-cyan-500",
-        bg: "from-sky-50 to-cyan-50",
-        border: "border-sky-100",
-        textColor: "text-sky-600",
+        title: "Completed",
+        value: String(taskStats.completedTasks),
+        label: "Finished",
+        to: "/productivity",
+        iconClassName: "bg-emerald-50 text-emerald-600",
         icon: (
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         ),
       },
     ];
-  }, [rooms, tasks]);
+  }, [taskStats]);
+
+  const recentActivity = useMemo(() => {
+    const currentUserId = getEntityId(user);
+
+    const taskActivity = tasks.map((task) => {
+      const isCompleted = task.status === "completed";
+
+      return {
+        id: `task-${task._id}`,
+        title: isCompleted ? `Task completed: ${task.title}` : `Task created: ${task.title}`,
+        description: isCompleted
+          ? "A task moved into your completed list."
+          : "A new task was added to your workspace.",
+        timestamp: task.createdAt,
+        to: "/productivity",
+        indicatorClassName: isCompleted ? "bg-emerald-500" : "bg-amber-500",
+      };
+    });
+
+    const roomActivity = rooms.map((room) => {
+      const isCreatedByUser = getEntityId(room.createdBy) === currentUserId;
+
+      return {
+        id: `room-${room._id}`,
+        title: isCreatedByUser ? `Room created: ${room.name}` : `Joined room: ${room.name}`,
+        description: isCreatedByUser
+          ? "Your collaboration space is ready for members."
+          : "You are now part of an active study room.",
+        timestamp: room.createdAt,
+        to: "/collaboration",
+        indicatorClassName: "bg-sky-500",
+      };
+    });
+
+    return [...taskActivity, ...roomActivity]
+      .map((item) => {
+        const parsedTimestamp = new Date(item.timestamp);
+
+        return {
+          ...item,
+          parsedTimestamp,
+        };
+      })
+      .filter((item) => !Number.isNaN(item.parsedTimestamp.getTime()))
+      .sort((first, second) => second.parsedTimestamp - first.parsedTimestamp)
+      .slice(0, 5);
+  }, [rooms, tasks, user]);
 
   return (
     <div className="space-y-8">
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <p className="text-slate-500 font-medium text-sm">Welcome back, {user?.name || "Student"}</p>
+      <header className="mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-slate-500">Welcome back, {user?.name || "Student"}</p>
+          {isRetrying ? (
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+              Refreshing...
+            </span>
+          ) : null}
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+        <h1 className="mt-2 font-display text-4xl font-semibold leading-none tracking-tight text-slate-900 sm:text-[2.8rem]">
           Your Dashboard
         </h1>
-        <p className="mt-1 text-slate-500 text-sm">
-          Here&apos;s a real-time summary of your tasks and collaboration spaces.
+        <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
+          Here&apos;s a quick overview of your activity.
         </p>
-      </div>
+      </header>
 
       {error && (
-        <Card variant="subtle" padding="md">
-          <p className="text-sm font-medium text-red-600">{error}</p>
-        </Card>
+        <div className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium">{error}</p>
+          <button
+            type="button"
+            onClick={loadDashboard}
+            disabled={isLoading}
+            className="font-ui inline-flex items-center justify-center rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white transition duration-200 hover:scale-[1.02] hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
+          >
+            {isLoading ? "Retrying..." : "Retry"}
+          </button>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {stats.map((stat) => (
-          <Link key={stat.title} to={stat.link} className="group">
-            <div className={`relative bg-gradient-to-br ${stat.bg} border ${stat.border} rounded-2xl p-6 shadow-card hover-lift overflow-hidden transition-all duration-200`}>
-              <div className={`absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br ${stat.gradient} opacity-10 rounded-full`} />
-
-              <div className="flex items-start justify-between mb-5">
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center text-white shadow-button group-hover:scale-105 transition-transform duration-200`}>
-                  {stat.icon}
-                </div>
-                <svg className={`w-4 h-4 mt-1 ${stat.textColor} opacity-0 group-hover:opacity-100 transition-opacity`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">{stat.title}</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold text-slate-900">
-                    {isLoading ? "--" : stat.value}
-                  </p>
-                  <p className={`text-xs font-semibold ${stat.textColor}`}>{isLoading ? "Loading..." : stat.total}</p>
-                </div>
-                <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
-              </div>
-            </div>
-          </Link>
+          <StatCard
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            label={stat.label}
+            to={stat.to}
+            isLoading={showStatSkeleton}
+            icon={stat.icon}
+            iconClassName={stat.iconClassName}
+          />
         ))}
-      </div>
+      </section>
 
-      <Card variant="default" padding="lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-6 rounded-full gradient-brand" />
-          <h2 className="text-lg font-bold text-slate-900">Quick Actions</h2>
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-3xl font-semibold leading-none tracking-tight text-slate-900">
+            Quick Actions
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">Jump into the next thing you need to do.</p>
         </div>
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {QUICK_ACTIONS.map((action) => (
             <Link
               key={action.name}
               to={action.link}
-              className={`group relative flex flex-col items-center text-center gap-3 p-5 rounded-xl border ${action.border} bg-gradient-to-br ${action.bg} hover-lift transition-all duration-200`}
+              className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center text-white shadow-button group-hover:scale-105 transition-transform duration-200`}>
+              <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${action.iconClassName}`}>
                 {action.icon}
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800">{action.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{action.desc}</p>
-              </div>
+              <p className="mt-4 font-ui text-sm font-semibold text-slate-900">{action.name}</p>
             </Link>
           ))}
         </div>
-      </Card>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-3xl font-semibold leading-none tracking-tight text-slate-900">
+            Recent Activity
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">The latest updates from your workspace.</p>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          {showStatSkeleton ? (
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="animate-pulse rounded-lg border border-slate-100 px-4 py-3">
+                  <div className="h-4 w-2/3 rounded bg-slate-100" />
+                  <div className="mt-2 h-3 w-20 rounded bg-slate-100" />
+                </div>
+              ))}
+            </div>
+          ) : recentActivity.length > 0 ? (
+            <div className="divide-y divide-slate-100">
+              {recentActivity.map((item) => (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  className="group flex items-start justify-between gap-4 rounded-lg py-4 transition duration-200 first:pt-0 last:pb-0 hover:bg-slate-50"
+                >
+                  <div>
+                    <p className="flex items-center gap-2 text-sm font-medium text-gray-700 transition duration-200 group-hover:text-slate-900">
+                      <span className={`h-2 w-2 rounded-full ${item.indicatorClassName}`} aria-hidden="true" />
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{item.description}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-400">{formatRelativeTime(item.timestamp)}</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-5 py-6">
+              <p className="font-ui text-sm font-semibold text-slate-900">No activity yet</p>
+              <p className="mt-2 max-w-md text-sm text-slate-500">
+                Create your first task or open a collaboration room to start building momentum.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  to="/productivity"
+                  className="font-ui inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition duration-200 hover:scale-[1.02] hover:bg-slate-800"
+                >
+                  Create Task
+                </Link>
+                <Link
+                  to="/collaboration"
+                  className="font-ui inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition duration-200 hover:border-slate-300 hover:bg-slate-50"
+                >
+                  Open Collaboration
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

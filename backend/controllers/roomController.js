@@ -1,4 +1,8 @@
+import mongoose from 'mongoose';
+
 import Room from '../models/Room.js';
+
+const getAuthenticatedUserId = (req) => req.user?._id || null;
 
 const generateRoomCode = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -14,6 +18,52 @@ const generateRoomCode = () => {
 
 const isRoomMember = (room, userId) =>
   room.members.some((memberId) => memberId.toString() === userId.toString());
+
+const getRoomCreatorId = (room) => room.creator || room.createdBy || null;
+
+const ensureRoomMembership = (room, userId) => {
+  if (!Array.isArray(room.members)) {
+    room.members = [];
+  }
+
+  if (isRoomMember(room, userId)) {
+    return false;
+  }
+
+  room.members.push(userId);
+  return true;
+};
+
+const ensureRoomOwnership = async (room) => {
+  let hasChanges = false;
+  const creatorId = getRoomCreatorId(room);
+
+  if (creatorId && !room.creator) {
+    room.creator = creatorId;
+    hasChanges = true;
+  }
+
+  if (creatorId && !room.createdBy) {
+    room.createdBy = creatorId;
+    hasChanges = true;
+  }
+
+  if (creatorId && ensureRoomMembership(room, creatorId)) {
+    hasChanges = true;
+  }
+
+  if (hasChanges) {
+    await room.save();
+  }
+
+  return room;
+};
+
+const getPopulatedRoom = async (roomId) =>
+  Room.findById(roomId)
+    .populate('creator', 'name email')
+    .populate('createdBy', 'name email')
+    .populate('members', 'name email');
 
 const createUniqueRoomCode = async () => {
   let isUnique = false;
@@ -33,7 +83,15 @@ const createUniqueRoomCode = async () => {
 
 export const createRoom = async (req, res) => {
   try {
+    const userId = getAuthenticatedUserId(req);
     const { name } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
 
     if (!name) {
       return res.status(400).json({
@@ -47,16 +105,26 @@ export const createRoom = async (req, res) => {
     const room = await Room.create({
       name,
       code,
-      createdBy: req.user._id,
-      members: [req.user._id],
+      creator: userId,
+      createdBy: userId,
+      members: [userId],
     });
+
+    const populatedRoom = await getPopulatedRoom(room._id);
 
     return res.status(201).json({
       success: true,
       message: 'Room created successfully',
-      data: room,
+      data: populatedRoom,
     });
   } catch (error) {
+    console.error('createRoom error:', {
+      error,
+      hasUser: Boolean(req.user),
+      userId: req.user?._id || null,
+      body: req.body,
+      params: req.params,
+    });
     return res.status(500).json({
       success: false,
       message: 'Server error',
@@ -64,9 +132,47 @@ export const createRoom = async (req, res) => {
   }
 };
 
+export const getUserRooms = async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const rooms = await Room.find({
+      members: userId,
+    });
+
+    await Promise.all(rooms.map((room) => ensureRoomOwnership(room)));
+
+    return res.status(200).json({
+      success: true,
+      data: rooms,
+    });
+  } catch (error) {
+    console.error('getUserRooms error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch rooms',
+    });
+  }
+};
+
 export const joinRoom = async (req, res) => {
   try {
+    const userId = getAuthenticatedUserId(req);
     const { code } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
 
     if (!code) {
       return res.status(400).json({
@@ -84,23 +190,35 @@ export const joinRoom = async (req, res) => {
       });
     }
 
-    if (isRoomMember(room, req.user._id)) {
+    await ensureRoomOwnership(room);
+
+    if (isRoomMember(room, userId)) {
+      const populatedRoom = await getPopulatedRoom(room._id);
+
       return res.status(200).json({
         success: true,
         message: 'User already in room',
-        data: room,
+        data: populatedRoom,
       });
     }
 
-    room.members.addToSet(req.user._id);
+    ensureRoomMembership(room, userId);
     await room.save();
+    const populatedRoom = await getPopulatedRoom(room._id);
 
     return res.status(200).json({
       success: true,
       message: 'Joined room successfully',
-      data: room,
+      data: populatedRoom,
     });
   } catch (error) {
+    console.error('joinRoom error:', {
+      error,
+      hasUser: Boolean(req.user),
+      userId: req.user?._id || null,
+      body: req.body,
+      params: req.params,
+    });
     return res.status(500).json({
       success: false,
       message: 'Server error',
@@ -110,6 +228,22 @@ export const joinRoom = async (req, res) => {
 
 export const getRoomDetails = async (req, res) => {
   try {
+    const userId = getAuthenticatedUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found',
+      });
+    }
+
     const room = await Room.findById(req.params.id);
 
     if (!room) {
@@ -119,26 +253,34 @@ export const getRoomDetails = async (req, res) => {
       });
     }
 
+    await ensureRoomOwnership(room);
+
     const isMember = room.members.some(
-      (member) => member.toString() === req.user._id.toString()
+      (member) => member.toString() === userId.toString()
     );
 
     if (!isMember) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied',
+        message: 'Access denied. Please rejoin the room.',
       });
     }
 
-    await room.populate('createdBy', 'name email');
-    await room.populate('members', 'name email');
+    const populatedRoom = await getPopulatedRoom(room._id);
 
     return res.status(200).json({
       success: true,
       message: 'Room fetched successfully',
-      data: room,
+      data: populatedRoom,
     });
   } catch (error) {
+    console.error('getRoomDetails error:', {
+      error,
+      hasUser: Boolean(req.user),
+      userId: req.user?._id || null,
+      body: req.body,
+      params: req.params,
+    });
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -148,12 +290,19 @@ export const getRoomDetails = async (req, res) => {
 
 export const leaveRoom = async (req, res) => {
   try {
-    const { roomId } = req.body;
+    const roomId = req.params.id || req.body.roomId;
 
     if (!roomId) {
       return res.status(400).json({
         success: false,
         message: 'Room ID is required',
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(roomId)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found',
       });
     }
 
@@ -166,10 +315,27 @@ export const leaveRoom = async (req, res) => {
       });
     }
 
+    await ensureRoomOwnership(room);
+
     if (!isRoomMember(room, req.user._id)) {
       return res.status(400).json({
         success: false,
         message: 'User is not in this room',
+      });
+    }
+
+    const creatorId = getRoomCreatorId(room);
+    const isCreator = creatorId?.toString() === req.user._id.toString();
+
+    if (isCreator) {
+      await room.deleteOne();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Room deleted',
+        deleted: true,
+        left: false,
+        data: null,
       });
     }
 
@@ -181,7 +347,9 @@ export const leaveRoom = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Left room successfully',
+      message: 'You left the room',
+      deleted: false,
+      left: true,
       data: room,
     });
   } catch (error) {
@@ -194,6 +362,13 @@ export const leaveRoom = async (req, res) => {
 
 export const deleteRoom = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found',
+      });
+    }
+
     const room = await Room.findById(req.params.id);
 
     if (!room) {
@@ -203,7 +378,11 @@ export const deleteRoom = async (req, res) => {
       });
     }
 
-    if (room.createdBy.toString() !== req.user._id.toString()) {
+    await ensureRoomOwnership(room);
+
+    const creatorId = getRoomCreatorId(room);
+
+    if (creatorId?.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Only creator can delete',

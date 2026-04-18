@@ -17,13 +17,8 @@ export const joinRoom = async ({ code }) => {
     throw new Error("Room code is required");
   }
 
-  try {
-    const response = await api.post("/api/rooms/join", { code: trimmedCode });
-    return response.data.data;
-  } catch (error) {
-    console.log(error.response);
-    throw error;
-  }
+  const response = await api.post("/api/rooms/join", { code: trimmedCode });
+  return response.data.data;
 };
 
 export const getRoomDetails = async (roomId) => {
@@ -32,7 +27,7 @@ export const getRoomDetails = async (roomId) => {
 };
 
 export const leaveRoom = async ({ roomId }) => {
-  const response = await api.post("/api/rooms/leave", { roomId });
+  const response = await api.post(`/api/rooms/${roomId}/leave`);
   return response.data;
 };
 
@@ -42,4 +37,6 @@ export const getApiErrorMessage = (
 ) =>
   error?.message === "Network Error"
     ? "Cannot connect to server. Check backend."
-    : error?.response?.data?.message || error?.message || fallbackMessage;
+    : error?.response?.status === 403
+      ? error?.response?.data?.message || "Access denied. Please rejoin the room."
+      : error?.response?.data?.message || error?.message || fallbackMessage;

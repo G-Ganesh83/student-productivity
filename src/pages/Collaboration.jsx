@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import CollaborationCard from "../components/CollaborationCard";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Textarea from "../components/Textarea";
@@ -10,12 +11,13 @@ import { createRoom, getApiErrorMessage, joinRoom } from "../api/roomApi";
 
 function Collaboration() {
   const navigate = useNavigate();
+  const location = useLocation();
   const nextIdRef = useRef(0);
 
-  const getNextId = () => {
+  const getNextId = useCallback(() => {
     nextIdRef.current += 1;
     return nextIdRef.current;
-  };
+  }, []);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
@@ -27,11 +29,24 @@ function Collaboration() {
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState("");
 
-  const addToast = (message, type = "success") => {
+  const addToast = useCallback((message, type = "success") => {
     const id = getNextId();
     setToasts((p) => [...p, { id, message, type }]);
-  };
-  const removeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
+  }, [getNextId]);
+  const removeToast = useCallback((id) => {
+    setToasts((p) => p.filter((t) => t.id !== id));
+  }, []);
+
+  useEffect(() => {
+    const roomToast = location.state?.roomToast;
+
+    if (!roomToast?.message) {
+      return;
+    }
+
+    addToast(roomToast.message, roomToast.type || "success");
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [addToast, location.pathname, location.state, navigate]);
 
   const openCreate = () => {
     setCreateForm({ name: "", description: "" });
@@ -77,7 +92,6 @@ function Collaboration() {
       addToast("Room created successfully", "success");
       navigate(`/room/${roomId}`);
     } catch (error) {
-      console.log(error.response);
       const message = getApiErrorMessage(
         error,
         "Unable to create the room right now. Please try again."
@@ -117,7 +131,6 @@ function Collaboration() {
       addToast("Joined room successfully", "success");
       navigate(`/room/${roomId}`);
     } catch (error) {
-      console.log(error.response);
       const message =
         error?.response?.status === 404
           ? "Invalid room code. Please check the code and try again."
@@ -163,58 +176,26 @@ function Collaboration() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5">
+      <div className="grid grid-cols-1 gap-5">
         {error && (
-          <Card variant="subtle" padding="md" className="xl:col-span-2 border border-red-200 bg-red-50">
+          <Card variant="subtle" padding="md" className="border border-red-200 bg-red-50">
             <p className="text-sm font-medium text-red-700">{error}</p>
           </Card>
         )}
 
-        <Card variant="brand" padding="lg">
-          <div className="py-2">
-            <div className="w-16 h-16 rounded-2xl gradient-brand flex items-center justify-center mb-5 shadow-button">
-              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Start a collaboration room</h2>
-            <p className="text-slate-600 text-sm leading-6 max-w-xl">
-              Create a fresh room for your team or join an existing one with a room code.
-              After entry, the app navigates using the room&apos;s MongoDB `_id`.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={openCreate}>Create Room</Button>
-              <Button variant="secondary" onClick={openJoin}>Join Room</Button>
-            </div>
-          </div>
-        </Card>
-
-        <Card variant="default" padding="lg">
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Room entry flow</h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Use the room name to create. Use the room code only to join.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-sm font-semibold text-slate-800">Create Room</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Sends <code>POST /api/rooms/create</code> with <code>{`{ name }`}</code> and
-                  navigates to <code>/room/:id</code>.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-sm font-semibold text-slate-800">Join Room</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Sends <code>POST /api/rooms/join</code> with <code>{`{ code }`}</code> and then
-                  uses <code>room._id</code> for navigation.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <CollaborationCard
+          title="Start a collaboration room"
+          description="Create a fresh room for your team or join an existing one with a room code. After entry, the app navigates using the room's MongoDB _id."
+          primaryActionText="Create Room"
+          secondaryActionText="Join Room"
+          onPrimaryAction={openCreate}
+          onSecondaryAction={openJoin}
+          icon={(
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )}
+        />
       </div>
 
       {/* ─── Create Modal ─────────────────────── */}

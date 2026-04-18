@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import CollaborationCard from "../components/CollaborationCard";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Textarea from "../components/Textarea";
@@ -151,31 +152,32 @@ function Resources() {
 
       {/* ─── Empty States ────────────────────── */}
       {resources.length === 0 ? (
-        <Card variant="brand" padding="lg">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-2xl gradient-brand flex items-center justify-center mx-auto mb-5 shadow-button">
-              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No resources yet</h3>
-            <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">Add links and PDFs to build your study library</p>
-            <Button onClick={openModal} size="lg">Add First Resource</Button>
-          </div>
-        </Card>
+        <CollaborationCard
+          title="No resources yet"
+          description="Add links and PDFs to build your study library."
+          primaryActionText="Add First Resource"
+          onPrimaryAction={openModal}
+          icon={(
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          )}
+          iconClassName="bg-gradient-to-br from-purple-500 to-purple-600"
+          primaryButtonClassName="bg-purple-600 hover:bg-purple-700"
+        />
       ) : filtered.length === 0 ? (
-        <Card variant="subtle" padding="lg">
-          <div className="text-center py-12">
-            <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">No results</h3>
-            <p className="text-slate-500 text-sm mb-5">Try a different search term</p>
-            <Button variant="secondary" onClick={() => setSearchQuery("")}>Clear Search</Button>
-          </div>
-        </Card>
+        <CollaborationCard
+          title="No results"
+          description="Try a different search term."
+          secondaryActionText="Clear Search"
+          onSecondaryAction={() => setSearchQuery("")}
+          icon={(
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          )}
+          iconClassName="bg-gradient-to-br from-purple-500 to-purple-600"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((resource) => {

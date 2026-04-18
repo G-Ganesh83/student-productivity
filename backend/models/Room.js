@@ -14,22 +14,50 @@ const roomSchema = new mongoose.Schema(
       uppercase: true,
       length: 6,
     },
+    creator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Creator is required'],
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
     },
-    members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
+    members: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
   }
 );
+
+roomSchema.pre('validate', function syncCreatorFields() {
+  if (!this.creator && this.createdBy) {
+    this.creator = this.createdBy;
+  }
+
+  if (!this.createdBy && this.creator) {
+    this.createdBy = this.creator;
+  }
+
+  if (!Array.isArray(this.members)) {
+    this.members = [];
+  }
+
+  if (
+    this.creator &&
+    !this.members.some((memberId) => memberId.toString() === this.creator.toString())
+  ) {
+    this.members.push(this.creator);
+  }
+});
 
 const Room = mongoose.model('Room', roomSchema);
 

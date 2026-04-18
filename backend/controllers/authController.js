@@ -6,24 +6,38 @@ import User from '../models/User.js';
 const generateToken = (userId) =>
   jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
+const normalizeEmail = (value) => value?.trim().toLowerCase();
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedName = name?.trim();
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPassword = password?.trim();
 
-    if (!name || !email || !password) {
+    if (!normalizedName || !normalizedEmail || !normalizedPassword) {
       return res.status(400).json({ message: 'Please provide name, email, and password' });
     }
 
-    const existingUser = await User.findOne({ email });
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    await User.create({ name, email, password });
+    await User.create({ name: normalizedName, email: normalizedEmail, password: normalizedPassword });
 
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -31,21 +45,27 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPassword = password?.trim();
 
-    if (!email || !password) {
+    if (!normalizedEmail || !normalizedPassword) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
     }
 
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(normalizedPassword, user.password);
 
     if (!isPasswordMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const token = generateToken(user._id);
