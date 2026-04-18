@@ -56,6 +56,17 @@ const FEATURES = [
     description: "Keep notes, links, PDFs, and supporting material together so study sessions stay streamlined instead of scattered.",
     iconBox: "bg-emerald-50 text-emerald-700",
   },
+  {
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-1.414 1.414m0 0A9 9 0 105.636 18.364m11.314-11.314L12 12" />
+      </svg>
+    ),
+    number: "04",
+    title: "Guidance & Settings",
+    description: "Built-in help and simple account settings make the workspace feel complete and easier to navigate confidently.",
+    iconBox: "bg-amber-50 text-amber-700",
+  },
 ];
 
 const COLLAB_FEATURES = [
@@ -70,6 +81,24 @@ const TECH = [
   { badge: "Backend", badgeClass: "bg-indigo-50 text-indigo-700", name: "Node.js + Express", sub: "Reliable APIs and room orchestration" },
   { badge: "Database", badgeClass: "bg-emerald-50 text-emerald-700", name: "MongoDB", sub: "Flexible storage for users, tasks, and rooms" },
   { badge: "Realtime", badgeClass: "bg-slate-100 text-slate-700", name: "Socket.IO", sub: "Instant collaboration events and room sync" },
+];
+
+const CTA_LINKS = [
+  {
+    title: "Start planning",
+    description: "Organize coursework and deadlines.",
+    to: "/productivity",
+  },
+  {
+    title: "Explore resources",
+    description: "Keep notes and useful references together.",
+    to: "/resources",
+  },
+  {
+    title: "Open help",
+    description: "Get quick guidance across the product.",
+    to: "/help",
+  },
 ];
 
 function Landing() {
@@ -156,7 +185,7 @@ function Landing() {
           <div className="max-w-[34rem]">
             <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">What&apos;s inside</p>
             <h2 className="mt-4 max-w-[10ch] font-display text-4xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
-              Three modules. One focused platform.
+              Core modules. One focused platform.
             </h2>
             <p className="mt-5 text-[1.02rem] leading-8 text-slate-500">
               Everything is designed to reduce tool-switching and keep the student workflow calm, quick, and collaborative.
@@ -164,7 +193,7 @@ function Landing() {
           </div>
 
           <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-200/70">
-            <div className="grid gap-px lg:grid-cols-3">
+            <div className="grid gap-px lg:grid-cols-4">
               {FEATURES.map((feature) => (
                 <article key={feature.title} className="bg-white px-6 py-8 sm:px-8">
                   <div className="font-display text-[3.4rem] leading-none tracking-[-0.05em] text-slate-200">
@@ -182,6 +211,45 @@ function Landing() {
                 </article>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 bg-white py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Explore faster</p>
+              <h2 className="mt-3 font-display text-3xl leading-tight tracking-[-0.03em] text-slate-900 sm:text-4xl">
+                Jump straight into the part of the product you need.
+              </h2>
+            </div>
+            <Link
+              to="/register"
+              className="font-ui inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950"
+            >
+              Create account
+            </Link>
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {CTA_LINKS.map((item) => (
+              <Link
+                key={item.title}
+                to={item.to}
+                className="rounded-[1.4rem] border border-slate-200 bg-slate-50/70 p-6 transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:bg-white"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-ui text-lg font-semibold tracking-[-0.02em] text-slate-900">{item.title}</h3>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-slate-500">{item.description}</p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

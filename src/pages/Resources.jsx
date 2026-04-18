@@ -70,6 +70,18 @@ function Resources() {
     }),
     [resources, searchQuery]
   );
+  const resourceStats = useMemo(() => {
+    const linkCount = resources.filter((resource) => resource.type === "link").length;
+    const pdfCount = resources.filter((resource) => resource.type === "pdf").length;
+    const totalTags = new Set(resources.flatMap((resource) => resource.tags)).size;
+
+    return [
+      { label: "Total Resources", value: resources.length, tone: "text-slate-700 bg-slate-100 border-slate-200" },
+      { label: "Links", value: linkCount, tone: "text-sky-700 bg-sky-50 border-sky-200" },
+      { label: "PDFs", value: pdfCount, tone: "text-rose-700 bg-rose-50 border-rose-200" },
+      { label: "Topics", value: totalTags, tone: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+    ];
+  }, [resources]);
 
   const addToast = (message, type = "success") => {
     const id = getNextId();
@@ -134,6 +146,26 @@ function Resources() {
         </Button>
       </div>
 
+      <Card variant="brand" padding="lg">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-700">Study library</p>
+            <h2 className="mt-3 text-2xl font-bold text-slate-900">Keep useful notes, links, and references in one clean place.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+              This module is intentionally lightweight so you can quickly save learning material, tag it clearly, and return to it during study sessions or collaboration rooms.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {resourceStats.map((item) => (
+              <div key={item.label} className={`rounded-2xl border px-4 py-4 ${item.tone}`}>
+                <p className="text-xs font-bold uppercase tracking-[0.16em]">{item.label}</p>
+                <p className="mt-2 text-2xl font-extrabold">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
       {/* ─── Search ──────────────────────────── */}
       {resources.length > 0 && (
         <Card variant="default" padding="md">
@@ -152,32 +184,37 @@ function Resources() {
 
       {/* ─── Empty States ────────────────────── */}
       {resources.length === 0 ? (
-        <CollaborationCard
-          title="No resources yet"
-          description="Add links and PDFs to build your study library."
-          primaryActionText="Add First Resource"
-          onPrimaryAction={openModal}
-          icon={(
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          )}
-          iconClassName="bg-gradient-to-br from-purple-500 to-purple-600"
-          primaryButtonClassName="bg-purple-600 hover:bg-purple-700"
-        />
+        <Card variant="brand" padding="lg">
+          <div className="text-center py-8">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl gradient-brand text-white shadow-button">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">No resources yet</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500">
+              Build a simple study library by saving your most useful links, notes, and PDFs here.
+            </p>
+            <Button className="mt-6" onClick={openModal}>
+              Add First Resource
+            </Button>
+          </div>
+        </Card>
       ) : filtered.length === 0 ? (
-        <CollaborationCard
-          title="No results"
-          description="Try a different search term."
-          secondaryActionText="Clear Search"
-          onSecondaryAction={() => setSearchQuery("")}
-          icon={(
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          )}
-          iconClassName="bg-gradient-to-br from-purple-500 to-purple-600"
-        />
+        <Card variant="subtle" padding="lg">
+          <div className="text-center py-8">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-200 text-slate-500">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">No matching resources</h3>
+            <p className="mt-2 text-sm text-slate-500">Try a different keyword or clear the current search.</p>
+            <Button variant="secondary" className="mt-5" onClick={() => setSearchQuery("")}>
+              Clear Search
+            </Button>
+          </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((resource) => {
