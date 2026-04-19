@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import logo from "../assets/logo.png";
 
 function BrandLogo({
   to = "/",
@@ -10,11 +11,15 @@ function BrandLogo({
     <Link
       to={to}
       onClick={onClick}
-      className={`flex items-center gap-2.5 ${className}`}
+      className={`inline-flex items-center gap-3 leading-none ${className}`}
     >
-      <div className="flex h-9 w-9 items-center justify-center rounded-[1.15rem] bg-slate-950 text-white shadow-sm shadow-slate-900/10 ring-1 ring-slate-900/5">
-        <span className="font-display text-[1.05rem] font-semibold leading-none">L</span>
-      </div>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center">
+        <img
+          src={logo}
+          alt="Learn Easy logo"
+          className="h-11 w-11 shrink-0 object-contain scale-[1.22]"
+        />
+      </span>
       {!compact ? (
         <span className="font-ui text-[0.92rem] font-semibold tracking-[0.14em] text-slate-900">
           LEARN EASY
