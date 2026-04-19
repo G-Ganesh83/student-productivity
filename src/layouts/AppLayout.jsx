@@ -5,6 +5,15 @@ import TopNavbar from "../components/TopNavbar";
 
 const NAV_ITEMS = [
   {
+    name: "Home",
+    href: "/",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+      </svg>
+    ),
+  },
+  {
     name: "Dashboard",
     href: "/dashboard",
     icon: (
@@ -66,7 +75,7 @@ function AppLayout() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,#f8fbfe_100%)] flex">
+    <div className="flex min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,#f8fbfe_100%)]">
       {/* ─── Desktop Sidebar ─────────────────── */}
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[284px] flex-col border-r border-slate-200/80 bg-[#F8FAFC] shadow-sidebar z-30">
         
@@ -141,11 +150,11 @@ function AppLayout() {
             style={{ animation: "fadeIn 0.18s ease both" }}
           />
           <div
-            className="lg:hidden fixed inset-y-0 left-0 w-72 bg-white z-50 shadow-2xl flex flex-col"
+            className="lg:hidden fixed inset-y-0 left-0 z-50 flex w-[min(20rem,86vw)] flex-col bg-white shadow-2xl"
             style={{ animation: "slideInLeft 0.22s cubic-bezier(0.34,1.56,0.64,1) both" }}
           >
             {/* Mobile Nav Area */}
-            <div className="flex items-center justify-between px-5 h-20 border-b border-slate-100">
+            <div className="flex h-20 items-center justify-between border-b border-slate-100 px-5">
               <BrandLogo
                 to="/"
                 onClick={() => {
@@ -164,7 +173,7 @@ function AppLayout() {
               </button>
             </div>
 
-            <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6">
               {NAV_ITEMS.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -199,10 +208,10 @@ function AppLayout() {
       )}
 
       {/* ─── Main Content ─────────────────────── */}
-      <main className="flex-1 lg:pl-[284px] min-w-0 flex flex-col">
+      <main className="flex min-w-0 flex-1 flex-col overflow-x-hidden lg:pl-[284px]">
         {/* Premium top navbar */}
         <TopNavbar onMobileMenuOpen={() => setIsMobileOpen(true)} />
-        <div className="flex-1 w-full bg-[radial-gradient(circle_at_top,_rgba(224,242,254,0.28),_rgba(255,255,255,0)_28%),linear-gradient(180deg,#ffffff_0%,#fcfdff_100%)] px-4 py-6 sm:px-6 lg:px-8 lg:py-8 xl:px-10 page-enter">
+        <div className="page-enter flex-1 w-full overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(224,242,254,0.28),_rgba(255,255,255,0)_28%),linear-gradient(180deg,#ffffff_0%,#fcfdff_100%)] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10">
           <Outlet />
         </div>
       </main>

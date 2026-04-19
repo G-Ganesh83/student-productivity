@@ -106,27 +106,27 @@ function Landing() {
     <div className="overflow-x-hidden bg-[#F8FAFC] text-slate-900">
       <Hero floatingCards={FLOATING_CARDS} />
 
-      <section className="bg-[#F8FAFC] pb-18 pt-4">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 text-white shadow-[0_24px_80px_-40px_rgba(15,23,42,0.55)]">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <div className="flex items-center gap-3">
+      <section className="bg-[#F8FAFC] pb-14 pt-4 sm:pb-18">
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-950 text-white shadow-[0_24px_80px_-40px_rgba(15,23,42,0.55)] sm:rounded-[2rem]">
+            <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="flex gap-2">
                   <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
                   <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
                   <span className="h-3 w-3 rounded-full bg-[#28c840]" />
                 </div>
-                <span className="font-ui text-sm font-medium text-slate-300">main.py — LEARN EASY Room #A3F9</span>
+                <span className="truncate font-ui text-sm font-medium text-slate-300">main.py — LEARN EASY Room #A3F9</span>
               </div>
-              <div className="rounded-full border border-emerald-900 bg-emerald-950/70 px-3 py-1 text-xs font-ui font-semibold text-emerald-300">
+              <div className="inline-flex w-fit rounded-full border border-emerald-900 bg-emerald-950/70 px-3 py-1 text-xs font-ui font-semibold text-emerald-300">
                 3 online
               </div>
             </div>
 
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1.55fr)_320px]">
               <div className="border-b border-white/10 lg:border-b-0 lg:border-r lg:border-white/10">
-                <div className="grid grid-cols-[52px_minmax(0,1fr)] px-4 py-5 font-mono text-[0.94rem] leading-8 sm:px-6">
-                  <div className="select-none border-r border-white/10 pr-4 text-right text-slate-500">
+                <div className="grid grid-cols-[40px_minmax(0,1fr)] px-3 py-4 font-mono text-[0.82rem] leading-7 sm:grid-cols-[52px_minmax(0,1fr)] sm:px-6 sm:py-5 sm:text-[0.94rem] sm:leading-8">
+                  <div className="select-none border-r border-white/10 pr-3 text-right text-slate-500 sm:pr-4">
                     <div>1</div>
                     <div>2</div>
                     <div>3</div>
@@ -138,7 +138,7 @@ function Landing() {
                     <div>9</div>
                     <div>10</div>
                   </div>
-                  <div className="overflow-x-auto pl-4 text-slate-100">
+                  <div className="overflow-x-auto pl-3 text-slate-100 sm:pl-4">
                     <div><span className="text-violet-300">def</span> <span className="text-sky-300">find_max</span>(scores):</div>
                     <div>    best = scores[<span className="text-amber-300">0</span>]</div>
                     <div>    <span className="text-violet-300">for</span> score <span className="text-violet-300">in</span> scores[<span className="text-amber-300">1</span>:]:</div>
@@ -154,10 +154,10 @@ function Landing() {
               </div>
 
               <div className="flex flex-col bg-slate-900/70">
-                <div className="border-b border-white/10 px-5 py-4">
+                <div className="border-b border-white/10 px-4 py-4 sm:px-5">
                   <p className="font-ui text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Team Chat</p>
                 </div>
-                <div className="flex-1 space-y-4 px-5 py-5 text-sm">
+                <div className="flex-1 space-y-4 px-4 py-5 text-sm sm:px-5">
                   <div className="max-w-[88%] rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <p className="mb-1 font-ui text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-300">Priya</p>
                     <p className="text-slate-200">Let&apos;s keep the example simple so everyone in the room can follow it fast.</p>
@@ -171,7 +171,7 @@ function Landing() {
                     <p className="text-slate-200">Done. We can keep using this room for the next problem set too.</p>
                   </div>
                 </div>
-                <div className="border-t border-white/10 bg-black/30 px-5 py-4 font-mono text-sm text-emerald-300">
+                <div className="border-t border-white/10 bg-black/30 px-4 py-4 font-mono text-sm text-emerald-300 sm:px-5">
                   &gt; Highest score: 91
                 </div>
               </div>
@@ -193,7 +193,7 @@ function Landing() {
           </div>
 
           <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-200/70">
-            <div className="grid gap-px lg:grid-cols-4">
+            <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-4">
               {FEATURES.map((feature) => (
                 <article key={feature.title} className="bg-white px-6 py-8 sm:px-8">
                   <div className="font-display text-[3.4rem] leading-none tracking-[-0.05em] text-slate-200">
@@ -220,19 +220,19 @@ function Landing() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Explore faster</p>
-              <h2 className="mt-3 font-display text-3xl leading-tight tracking-[-0.03em] text-slate-900 sm:text-4xl">
+              <h2 className="mt-3 font-display text-2xl leading-tight tracking-[-0.03em] text-slate-900 sm:text-4xl">
                 Jump straight into the part of the product you need.
               </h2>
             </div>
             <Link
               to="/register"
-              className="font-ui inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950"
+              className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 sm:w-auto"
             >
               Create account
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {CTA_LINKS.map((item) => (
               <Link
                 key={item.title}
@@ -240,8 +240,8 @@ function Landing() {
                 className="rounded-[1.4rem] border border-slate-200 bg-slate-50/70 p-6 transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:bg-white"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-ui text-lg font-semibold tracking-[-0.02em] text-slate-900">{item.title}</h3>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white">
+                  <h3 className="font-ui text-base font-semibold tracking-[-0.02em] text-slate-900 sm:text-lg">{item.title}</h3>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
@@ -255,13 +255,13 @@ function Landing() {
       </section>
 
       <section id="collaboration" className="bg-slate-950 py-20 text-white lg:py-24">
-        <div className="mx-auto grid max-w-6xl gap-14 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:px-8">
+        <div className="mx-auto grid max-w-screen-xl gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:gap-14 lg:px-8">
           <div className="max-w-[34rem]">
             <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-300/90">Collaboration</p>
-            <h2 className="mt-4 font-display text-4xl leading-[0.95] tracking-[-0.04em] text-white sm:text-5xl">
+            <h2 className="mt-4 font-display text-3xl leading-[0.95] tracking-[-0.04em] text-white sm:text-5xl">
               Code together, share context, move faster.
             </h2>
-            <p className="mt-5 text-[1.02rem] leading-8 text-slate-300">
+            <p className="mt-5 text-base leading-7 text-slate-300 sm:text-[1.02rem] sm:leading-8">
               LEARN EASY is built for problem-solving sessions, pair programming, and project teamwork without the mess of scattered tools.
             </p>
 
@@ -279,14 +279,14 @@ function Landing() {
             <div className="mt-10">
               <Link
                 to="/collaboration"
-                className="font-ui inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-white hover:text-slate-950"
+                className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-white hover:text-slate-950 sm:w-auto"
               >
                 Explore collaboration
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-36px_rgba(14,165,233,0.25)]">
+          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-4 shadow-[0_20px_60px_-36px_rgba(14,165,233,0.25)] sm:p-6">
             <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
               <div className="flex -space-x-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-slate-950 bg-sky-200 text-sm font-ui font-semibold text-slate-950">P</div>
@@ -301,7 +301,7 @@ function Landing() {
               </div>
             </div>
 
-            <div className="mt-6 space-y-3 rounded-[1.25rem] border border-white/10 bg-black/20 p-5 font-mono text-sm">
+            <div className="mt-6 space-y-3 overflow-x-auto rounded-[1.25rem] border border-white/10 bg-black/20 p-4 font-mono text-sm sm:p-5">
               <div><span className="text-violet-300">def</span> <span className="text-sky-300">bubble_sort</span>(arr):</div>
               <div>    <span className="text-violet-300">for</span> i <span className="text-violet-300">in</span> <span className="text-sky-300">range</span>(<span className="text-sky-300">len</span>(arr)):</div>
               <div>        <span className="text-violet-300">for</span> j <span className="text-violet-300">in</span> <span className="text-sky-300">range</span>(<span className="text-sky-300">len</span>(arr) - i - <span className="text-amber-300">1</span>):</div>
@@ -318,7 +318,7 @@ function Landing() {
       </section>
 
       <section id="tech" className="border-t border-slate-200 bg-white py-20 lg:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-[34rem]">
             <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Tech Stack</p>
             <h2 className="mt-4 max-w-[11ch] font-display text-4xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
@@ -345,15 +345,15 @@ function Landing() {
       <section className="border-t border-slate-200 bg-[#F8FAFC] py-20 lg:py-24">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Start now</p>
-          <h2 className="mt-4 font-display text-4xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
+          <h2 className="mt-4 font-display text-3xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
             Ready to study smarter with one calm workspace?
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[1.02rem] leading-8 text-slate-500">
+          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-[1.02rem] sm:leading-8">
             Create your account, open a room, and keep planning, coding, and course material connected from day one.
           </p>
           <Link
             to="/register"
-            className="font-ui mt-8 inline-flex rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-button transition duration-200 hover:scale-[1.02] hover:bg-slate-800"
+            className="font-ui mt-8 inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-button transition duration-200 hover:scale-[1.02] hover:bg-slate-800 sm:w-auto"
           >
             Create your account
           </Link>

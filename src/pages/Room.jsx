@@ -43,6 +43,12 @@ const FILE_TABS = [
   { id: "readme.md", label: "README.md", active: false },
 ];
 
+const MOBILE_ROOM_TABS = [
+  { id: "editor", label: "Code" },
+  { id: "chat", label: "Chat" },
+  { id: "members", label: "Members" },
+];
+
 function Room() {
   const { roomId } = useParams();
   const navigate = useNavigate();
@@ -85,6 +91,7 @@ function Room() {
   const [chatPanelWidth, setChatPanelWidth] = useState(380);
   const [isResizeHandleActive, setIsResizeHandleActive] = useState(false);
   const [isRoomCodeCopied, setIsRoomCodeCopied] = useState(false);
+  const [mobileRoomTab, setMobileRoomTab] = useState("editor");
 
   const getEntityId = useCallback((value) => {
     if (!value) {
@@ -136,6 +143,7 @@ function Room() {
     setIsRoomValid(false);
     setLoading(true);
     setIsRoomLoading(true);
+    setMobileRoomTab("editor");
   }, [roomId]);
 
   const redirectToCollaboration = useCallback((message, type = "error") => {
@@ -869,7 +877,7 @@ function Room() {
   const isPageLoading = loading || isRoomLoading || !isRoomValid;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-slate-100">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-slate-100">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Modal
         isOpen={isLeaveDialogOpen}
@@ -990,24 +998,23 @@ function Room() {
         </div>
       ) : (
         <>
-
-      <header className="border-b border-slate-200 bg-white px-5 py-4">
+      <div className="border-b border-slate-200 bg-white px-3 py-3 sm:px-5 sm:py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 sm:h-11 sm:w-11">
               <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500 sm:text-[11px] sm:tracking-[0.28em]">
                 Live Collaboration Room
               </p>
-              <div className="flex items-center gap-2">
-                <h1 className="truncate text-xl font-bold text-slate-900">{displayedRoomName}</h1>
+              <div className="flex min-w-0 items-center gap-2">
+                <h1 className="truncate text-lg font-bold text-slate-900 sm:text-xl">{displayedRoomName}</h1>
                 <button
                   onClick={handleCopyRoomCode}
-                  className={`rounded-lg p-1.5 transition-all ${
+                  className={`shrink-0 rounded-lg p-1.5 transition-all ${
                     isRoomCodeCopied
                       ? "bg-emerald-50 text-emerald-600"
                       : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
@@ -1019,17 +1026,17 @@ function Room() {
                   </svg>
                 </button>
               </div>
-              <p className="truncate text-sm text-slate-500">
+              <p className="truncate text-xs text-slate-500 sm:text-sm">
                 Room Code: {displayedRoomCode}
-                <span className={`ml-2 text-xs font-medium ${isRoomCodeCopied ? "text-emerald-600" : "text-slate-400"}`}>
+                <span className={`ml-2 text-[11px] font-medium ${isRoomCodeCopied ? "text-emerald-600" : "text-slate-400"}`}>
                   {isRoomCodeCopied ? "Copied" : "Click to copy"}
                 </span>
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-3 py-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between lg:justify-end">
+            <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
               <div className="flex -space-x-2">
                 {activeUsers.slice(0, 4).map((user) => (
                   <div
@@ -1046,36 +1053,331 @@ function Room() {
                   </div>
                 ) : null}
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-800">{onlineCount} online</p>
-                <p className="text-xs text-slate-500">{typingIndicator}</p>
+                <p className="truncate text-xs text-slate-500">{typingIndicator}</p>
               </div>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-              <span className={`h-2 w-2 rounded-full ${connectionClassName} ${isReconnecting ? "animate-pulse" : ""}`} />
-              {connectionLabel}
+
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+                <span className={`h-2 w-2 rounded-full ${connectionClassName} ${isReconnecting ? "animate-pulse" : ""}`} />
+                {connectionLabel}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate("/collaboration")}
+                className="min-h-[42px] flex-1 sm:flex-none"
+              >
+                Back
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setIsLeaveDialogOpen(true)}
+                disabled={isLeaving}
+                className="min-h-[42px] flex-1 sm:flex-none"
+              >
+                {isLeaving ? (isCurrentUserHost ? "Deleting..." : "Leaving...") : "Leave Room"}
+              </Button>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => navigate("/collaboration")}
-            >
-              Back
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setIsLeaveDialogOpen(true)}
-              disabled={isLeaving}
-            >
-              {isLeaving ? (isCurrentUserHost ? "Deleting..." : "Leaving...") : "Leave Room"}
-            </Button>
           </div>
         </div>
-      </header>
+      </div>
+
+      <div className="xl:hidden border-b border-slate-200 bg-white px-3 py-2 sm:px-4">
+        <div className="grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1">
+          {MOBILE_ROOM_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setMobileRoomTab(tab.id)}
+              className={`min-h-[42px] rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                mobileRoomTab === tab.id
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex-1 overflow-hidden">
-        <div className="flex h-full min-h-0 flex-col xl:flex-row">
+        <div className="xl:hidden flex h-full min-h-0 flex-col">
+          {mobileRoomTab === "editor" ? (
+            <div className="flex min-h-0 flex-1 flex-col bg-slate-950">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-800 bg-[#0B1220] px-3 py-3 sm:px-4">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                    <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                    <div className="h-3 w-3 rounded-full bg-[#28c840]" />
+                  </div>
+                  <div className="h-4 w-px bg-slate-700" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-100">main.py</p>
+                    <p className="truncate text-xs text-slate-400">Python collaborative editor</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  className="inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-xl bg-emerald-300 px-3 py-2 text-sm font-bold text-slate-900 transition-all hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
+                >
+                  {isRunning ? "Running..." : "Run"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-b border-slate-800 bg-[#0f172a] px-3 py-2 sm:px-4">
+                <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+                  {FILE_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`shrink-0 rounded-t-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                        tab.active
+                          ? "border-slate-700 border-b-slate-950 bg-slate-950 text-slate-100"
+                          : "border-transparent bg-transparent text-slate-400 hover:border-slate-800 hover:bg-slate-900/60 hover:text-slate-200"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5 text-[11px] text-slate-400 sm:text-xs">
+                  <span className={`h-2 w-2 rounded-full ${isEditorTyping ? "bg-sky-400 animate-pulse" : "bg-emerald-400"}`} />
+                  <span>{isEditorTyping ? "Editing" : "Synced"}</span>
+                </div>
+              </div>
+
+              <div
+                className="flex min-h-0 flex-1 overflow-auto bg-[#0B1220]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px)",
+                  backgroundSize: "28px 28px",
+                }}
+              >
+                <div className="flex w-11 shrink-0 flex-col items-end bg-[#111827] px-2 pt-5 text-[11px] font-mono text-slate-500 select-none sm:w-14 sm:px-3 sm:text-xs">
+                  {codeLines.map((_, i) => (
+                    <div key={i} className="w-full text-right leading-7">{i + 1}</div>
+                  ))}
+                </div>
+
+                <div className="relative min-w-0 flex-1">
+                  <textarea
+                    value={code}
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    className="absolute inset-0 h-full w-full resize-none bg-transparent px-3 py-4 font-mono text-sm leading-7 text-slate-200 caret-cyan-300 focus:outline-none sm:px-5 sm:py-5"
+                    style={{ fontFamily: '"Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace', tabSize: 2 }}
+                    spellCheck={false}
+                    wrap="off"
+                    placeholder="Start coding with your team..."
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-800 bg-[#0B1220]">
+                <button
+                  type="button"
+                  onClick={() => setIsOutputExpanded((current) => !current)}
+                  className="flex w-full items-center justify-between border-b border-slate-800 bg-[#111827] px-3 py-3 text-left transition-colors hover:bg-slate-900 sm:px-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 sm:text-xs">Output</span>
+                    <span className="text-[11px] text-slate-500 sm:text-xs">{isOutputExpanded ? "Visible" : "Hidden"}</span>
+                  </div>
+                  <svg
+                    className={`h-4 w-4 text-slate-400 transition-transform ${isOutputExpanded ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isOutputExpanded ? (
+                  <div
+                    ref={outputPanelRef}
+                    className={`max-h-[180px] overflow-auto bg-[#020617] p-3 font-mono text-xs transition-all duration-200 sm:max-h-[220px] sm:p-4 ${
+                      outputState === "running" ? "animate-pulse" : ""
+                    }`}
+                  >
+                    <pre
+                      className={`whitespace-pre-wrap break-words leading-6 transition-colors duration-200 ${
+                        outputState === "error"
+                          ? "text-rose-300"
+                          : outputState === "running"
+                            ? "text-amber-200"
+                            : "text-emerald-200"
+                      }`}
+                    >
+                      {executionOutput}
+                    </pre>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {mobileRoomTab === "chat" ? (
+            <div className="flex min-h-0 flex-1 flex-col bg-white">
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-sm font-bold text-slate-800">Team Chat</span>
+                </div>
+                <Badge variant="default" size="xs">{messages.length}</Badge>
+              </div>
+
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span className="h-2 w-2 rounded-full bg-sky-500" />
+                  <span className="truncate">{typingIndicator}</span>
+                </div>
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex-1 space-y-3 overflow-y-auto bg-white p-4">
+                  {messages.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-center">
+                      <div className="max-w-[240px] px-4 py-5">
+                        <p className="text-sm font-semibold text-slate-700">Start the room conversation</p>
+                        <p className="mt-1 text-xs text-slate-500">Ask a question, share context, or coordinate the next code change.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    groupedMessages.map((group) => {
+                      const isMe = group.userId === currentUserIdRef.current;
+
+                      return (
+                        <div key={group.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                          <div className={`flex max-w-[92%] flex-col gap-1.5 ${isMe ? "items-end" : "items-start"}`}>
+                            <div className="flex items-center gap-2 px-1">
+                              {!isMe ? (
+                                <span className={`text-[11px] font-semibold ${getUserColor(group.userId).name}`}>
+                                  {getUserName(group.userId)}
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-sky-700">You</span>
+                              )}
+                              <span className="text-[10px] text-slate-400">{group.lastTime}</span>
+                            </div>
+                            <div className={`flex flex-col gap-1.5 ${isMe ? "items-end" : "items-start"}`}>
+                              {group.items.map((msg) => (
+                                <div
+                                  key={msg.id}
+                                  className={`break-words rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                                    isMe
+                                      ? "bg-slate-900 text-white"
+                                      : "border border-slate-200 bg-slate-50 text-slate-800"
+                                  }`}
+                                >
+                                  {msg.message}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="sticky bottom-0 border-t border-slate-200 bg-white p-3">
+                  <div className="flex items-end gap-2">
+                    <textarea
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage(chatInput);
+                        }
+                      }}
+                      placeholder="Send a message to the room..."
+                      rows={1}
+                      className="flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 placeholder:text-slate-400 transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                    />
+                    <button
+                      onClick={() => handleSendMessage(chatInput)}
+                      disabled={!chatInput.trim()}
+                      className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-900/15 transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {mobileRoomTab === "members" ? (
+            <div className="flex min-h-0 flex-1 flex-col bg-white">
+              <div className="border-b border-slate-200 px-4 py-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Participants <span className="text-slate-300">·</span> {onlineCount} active
+                  </h2>
+                  <span className="text-xs text-slate-400">{participantList.length} total</span>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  {participantList.length === 1 ? "Waiting for others to join..." : `${onlineCount} collaborators are active right now.`}
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                <div className="space-y-3">
+                  {participantList.map((participant) => {
+                    const colors = getUserColor(participant.id);
+                    const roleLabel = participant.isCreator ? "Host" : "Participant";
+
+                    return (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-slate-50"
+                      >
+                        <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${colors.avatar}`}>
+                          {(participant.name || "U").slice(0, 1).toUpperCase()}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-medium text-slate-800">
+                              {participant.name}
+                              {participant.isCurrentUser ? " (You)" : ""}
+                            </p>
+                            {participant.isCreator ? (
+                              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                                {roleLabel}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400">{roleLabel}</span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${getParticipantStatusClassName(participant.status)}`} />
+                            <p className="text-xs text-slate-500">{getParticipantStatusLabel(participant)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="hidden h-full min-h-0 xl:flex xl:flex-row">
 
         <div className="flex min-h-0 flex-1 flex-col bg-slate-950">
           <div className="flex items-center justify-between border-b border-slate-800 bg-[#0B1220] px-4 py-3">

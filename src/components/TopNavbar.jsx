@@ -153,7 +153,7 @@ function TopNavbar({ onMobileMenuOpen }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200/60 bg-white/70 shadow-sm backdrop-blur-lg">
-      <div className="flex h-16 items-center justify-between gap-6 px-6 lg:px-8 xl:px-10">
+      <div className="flex h-16 items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="flex min-w-0 items-center gap-3">
           <button
             onClick={onMobileMenuOpen}
@@ -165,12 +165,12 @@ function TopNavbar({ onMobileMenuOpen }) {
             </svg>
           </button>
 
-          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-950">
+          <h1 className="truncate text-lg font-semibold tracking-tight text-slate-950 sm:text-xl">
             {meta.title}
           </h1>
         </div>
 
-        <div className="ml-auto flex items-center gap-6">
+        <div className="ml-auto flex items-center gap-2 sm:gap-4 lg:gap-6">
           <IconButton label="Settings" onClick={() => navigate("/settings")}>
             <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />

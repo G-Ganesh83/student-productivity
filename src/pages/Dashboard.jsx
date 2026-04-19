@@ -284,7 +284,7 @@ function Dashboard() {
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((stat) => (
           <StatCard
             key={stat.title}
@@ -309,18 +309,18 @@ function Dashboard() {
           <p className="mt-2 text-sm text-slate-600">Jump into the next thing you need to do.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {QUICK_ACTIONS.map((action) => (
             <Link
               key={action.name}
               to={action.link}
               className="group cursor-pointer rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-[1px] hover:scale-[1.02] hover:shadow-card-hover"
             >
-              <div className="flex flex-col items-center text-center">
+              <div className="flex items-center gap-4 text-left sm:flex-col sm:text-center">
                 <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${action.iconClassName}`}>
                 {action.icon}
                 </div>
-                <p className="mt-4 font-ui text-sm font-medium text-slate-900">{action.name}</p>
+                <p className="font-ui text-sm font-medium text-slate-900 sm:mt-4">{action.name}</p>
               </div>
             </Link>
           ))}
@@ -351,14 +351,14 @@ function Dashboard() {
                 <Link
                   key={item.id}
                   to={item.to}
-                  className="group flex items-start justify-between gap-4 rounded-2xl py-4 transition-all duration-200 ease-out first:pt-0 last:pb-0 hover:bg-slate-50/85"
+                  className="group flex flex-col items-start gap-2 rounded-2xl py-4 transition-all duration-200 ease-out first:pt-0 last:pb-0 hover:bg-slate-50/85 sm:flex-row sm:justify-between sm:gap-4"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm font-medium text-slate-800 transition duration-200 group-hover:text-slate-900">
                       <span className={`h-2 w-2 rounded-full ${item.indicatorClassName}`} aria-hidden="true" />
                       {item.title}
                     </p>
-                    <p className="mt-1 text-xs text-slate-600">{item.description}</p>
+                    <p className="mt-1 break-words text-xs text-slate-600">{item.description}</p>
                   </div>
                   <span className="shrink-0 text-xs text-slate-600">{formatRelativeTime(item.timestamp)}</span>
                 </Link>

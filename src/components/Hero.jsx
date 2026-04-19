@@ -6,15 +6,15 @@ import FeatureCard from "./FeatureCard";
 function Hero({ floatingCards }) {
   return (
     <section className="border-b border-slate-200/80 bg-[linear-gradient(180deg,#f8fafc_0%,#f8fafc_82%,#f4f8fc_100%)]">
-      <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-10 sm:px-6 lg:px-6 lg:pb-20 lg:pt-14">
-        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-8">
-          <div className="max-w-[38rem] lg:-mt-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[0.82rem] text-slate-600 shadow-sm shadow-slate-900/5">
+      <div className="mx-auto max-w-[1200px] px-4 pb-14 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-6 lg:pb-20 lg:pt-14">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-8">
+          <div className="mx-auto flex max-w-[38rem] flex-col items-center text-center lg:-mt-10 lg:mx-0 lg:items-start lg:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[0.78rem] text-slate-600 shadow-sm shadow-slate-900/5 sm:text-[0.82rem]">
               <span className="h-2 w-2 rounded-full bg-sky-500" />
               Built for students, by students
             </div>
 
-            <h1 className="mt-8 max-w-[11ch] font-display text-[clamp(3.3rem,7vw,5.8rem)] leading-[0.95] tracking-tight text-slate-900">
+            <h1 className="mt-6 max-w-[12ch] font-display text-[clamp(2.3rem,9vw,5.8rem)] leading-[0.95] tracking-tight text-slate-900 sm:mt-8">
               One place to study,
               <br />
               <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
@@ -25,20 +25,20 @@ function Hero({ floatingCards }) {
               smarter.
             </h1>
 
-            <p className="mt-6 max-w-lg text-[1.02rem] leading-8 text-gray-600 sm:text-[1.06rem]">
+            <p className="mt-5 max-w-lg text-sm leading-7 text-gray-600 sm:mt-6 sm:text-[1.02rem] sm:leading-8 lg:text-[1.06rem]">
               Plan tasks, code together in real-time, and share resources — all in one focused workspace.
             </p>
 
-            <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <div className="mt-8 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center lg:w-auto">
               <Link
                 to="/register"
-                className="font-ui inline-flex items-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:bg-slate-800"
+                className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:bg-slate-800 sm:w-auto"
               >
                 Get Started
               </Link>
               <Link
                 to="/collaboration"
-                className="font-ui inline-flex items-center rounded-full border border-slate-300 bg-transparent px-5 py-3 text-sm font-medium text-slate-700 transition duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-950"
+                className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-slate-300 bg-transparent px-5 py-3 text-sm font-medium text-slate-700 transition duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-950 sm:w-auto"
               >
                 Join a room
               </Link>
@@ -50,11 +50,11 @@ function Hero({ floatingCards }) {
             <div className="absolute bottom-12 right-4 h-44 w-44 rounded-full bg-indigo-200/20 blur-3xl" />
             <div className="absolute right-24 top-8 h-28 w-28 rounded-full bg-sky-100/50 blur-2xl" />
 
-            <div className="relative z-10 w-full max-w-[36rem] lg:max-w-[40rem]">
+            <div className="relative z-10 w-full max-w-[22rem] sm:max-w-[30rem] lg:max-w-[40rem]">
               <div className="absolute left-8 top-0 hidden rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[0.68rem] font-ui font-semibold uppercase tracking-[0.22em] text-sky-600 shadow-sm md:block">
                 Focus mode
               </div>
-              <div className="relative px-2 py-8 sm:px-6 lg:px-0">
+              <div className="relative px-0 py-4 sm:px-6 sm:py-8 lg:px-0">
                 <Lottie animationData={collabAnimation} loop className="w-full" />
               </div>
             </div>

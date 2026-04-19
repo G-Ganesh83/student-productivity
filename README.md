@@ -1,90 +1,183 @@
 # LEARN EASY
 
-**LEARN EASY** is a full-stack MERN collaboration platform built to make learning, productivity, and team coding feel connected in one experience. It combines secure authentication, a modern SaaS-style dashboard, task management, and a real-time collaboration room with shared coding and chat.
+LEARN EASY is a full-stack student productivity and collaboration platform built with React, Express, MongoDB, and Socket.IO. It combines personal task management, room-based collaboration, a real-time shared code editor, live chat, and a lightweight study resources area in a single workspace.
 
----
+## Overview
 
-## Preview
+Students often split their workflow across multiple tools: one for tasks, one for chat, one for coding, and another for notes or links. LEARN EASY brings those flows together so users can:
 
-### Landing Page
-`Add screenshot here`
-
-### Dashboard
-`Add screenshot here`
-
-### Productivity
-`Add screenshot here`
-
-### Collaboration Room
-`Add screenshot here`
-
----
+- manage personal tasks and deadlines
+- create or join collaboration rooms with a 6-character room code
+- collaborate in real time through chat and synced code
+- run Python code inside the room workflow
+- store study resources in a simple library view
 
 ## Features
 
 ### Authentication
-- Secure user registration and login
-- JWT-based authentication flow
-- Protected routes for authenticated users
-- Session-aware socket connection handling
 
-### Dashboard
-- Clean SaaS-style overview layout
-- Centralized access to core modules
-- User-focused navigation and productivity insights
+- Register with name, email, and password
+- Log in with JWT-based authentication
+- Persist auth state in local storage
+- Protect app routes with `ProtectedRoute`
+- Authenticate Socket.IO connections with the same JWT
 
-### Productivity
-- Create, update, delete, and manage tasks
-- Priority-based task organization
-- Task filtering and search support
-- Smooth loading and error handling for API interactions
+### Task Management
 
-### Collaboration Room
-- Real-time shared code editor
-- Live chat between room participants
-- Join room using a room code
-- Host and member role awareness
-- Participant list with live presence indicators
-- Code execution support inside the collaboration workflow
-- Reconnection-aware room sync for multi-user sessions
+- Create tasks with title, description, priority, and optional due date
+- Edit and delete tasks
+- Toggle task status between `pending` and `completed`
+- Filter by status and priority
+- Search tasks by title and description
 
----
+### Collaboration Rooms
+
+- Create a room with an auto-generated 6-character code
+- Join a room using the code
+- Restrict room access to authenticated members only
+- Delete a room when the host leaves
+- Track room participants and presence in real time
+
+### Real-Time Collaboration
+
+- Shared code editor with live code sync
+- Room chat with real-time message delivery
+- Output sync after running code
+- Join, leave, disconnect, and room-deletion presence updates
+- Reconnection-aware room join and code resync
+
+### Resource Library
+
+- Save links and PDF-style entries from the frontend
+- Search by title and tag
+- Track simple library stats
+
+Note: the Resources module is currently frontend-only and persists through `localStorage`, not MongoDB.
 
 ## Tech Stack
 
 ### Frontend
-- React
-- Vite
-- Tailwind CSS
+
+- React 19
+- Vite 7
+- Tailwind CSS 3
+- React Router DOM 7
 - Axios
-- React Router
+- Socket.IO Client
+- Lottie React
 
 ### Backend
+
 - Node.js
-- Express.js
+- Express 5
+- Socket.IO
+- JWT (`jsonwebtoken`)
+- bcryptjs
+
+### Database
+
 - MongoDB
 - Mongoose
 
-### Real-Time
-- Socket.io
+### Tools
 
-### Authentication & Security
-- JWT Authentication
-- Protected API routes
-
----
+- ESLint
+- PostCSS
+- Nodemon
+- `python3` for code execution
 
 ## Architecture Overview
 
-The frontend is built with React + Vite and communicates with the Express backend through REST APIs for authentication, tasks, rooms, and code execution. MongoDB stores users, rooms, and task data. Socket.io handles real-time communication for collaboration rooms, including code sync, chat messages, presence updates, and reconnect-based room rejoining.
+LEARN EASY uses a split REST + Socket architecture:
 
-**Flow:**  
-`React Frontend` ↔ `Express API` ↔ `MongoDB`  
-`React Frontend` ↔ `Socket.io Client` ↔ `Socket.io Server`
+1. The React frontend handles UI, routing, auth state, and room screens.
+2. Axios calls the Express backend for authentication, tasks, rooms, and code execution.
+3. MongoDB stores users, tasks, and collaboration rooms.
+4. Socket.IO handles real-time collaboration inside rooms.
 
----
+### Request / Data Flow
+
+- `React UI` -> `Axios API` -> `Express routes/controllers` -> `MongoDB`
+- `React Room page` -> `socket.io-client` -> `Socket.IO server` -> broadcasts to room members
+
+### Room Flow
+
+1. A user creates or joins a room using REST endpoints.
+2. The frontend navigates to `/room/:roomId`.
+3. The room page connects to Socket.IO with the JWT token.
+4. The client emits `join-room` with the `roomId`.
+5. The server validates JWT + room membership before allowing room events.
+6. Chat, code sync, output sync, join/leave presence, and room deletion updates are emitted in real time.
+
+## Folder Structure
+
+```text
+student-productivity/
+├── src/
+│   ├── api/              # Frontend API wrappers for auth, tasks, rooms, code
+│   ├── assets/           # Images, animation JSON, branding assets
+│   ├── components/       # Reusable UI components
+│   ├── context/          # Auth context and global auth state
+│   ├── data/             # Local dummy data used by Resources
+│   ├── layouts/          # Landing layout and authenticated app shell
+│   ├── pages/            # Feature pages (landing, dashboard, room, etc.)
+│   ├── services/         # Axios instance, socket service, dashboard service
+│   ├── socket/           # Socket wrapper exports used by the frontend
+│   └── utils/            # Auth token helpers and utilities
+├── backend/
+│   ├── config/           # Database connection
+│   ├── controllers/      # Route handlers for auth, tasks, rooms, code
+│   ├── middleware/       # JWT auth middleware
+│   ├── middlewares/      # Global Express error handler
+│   ├── models/           # Mongoose models (User, Task, Room)
+│   ├── routes/           # Express route definitions
+│   ├── socket/           # Socket.IO room/event manager
+│   ├── test/             # Socket test script
+│   └── utils/            # Async handler utilities
+├── public/               # Static favicon / logo assets
+└── README.md
+```
+
+## Core Data Models
+
+### User
+
+- `name`
+- `email` (unique, lowercase)
+- `password` (hashed with bcrypt)
+
+### Task
+
+- `user` (owner reference)
+- `title`
+- `description`
+- `priority` (`low | medium | high`)
+- `dueDate`
+- `status` (`pending | completed`)
+
+### Room
+
+- `name`
+- `code` (6-character uppercase room code)
+- `creator`
+- `createdBy`
+- `members`
 
 ## Getting Started
+
+### Prerequisites
+
+Before running the project, make sure you have:
+
+- Node.js installed
+  - This repo does not define an `engines` field, but Node 20+ is recommended because the frontend uses Vite 7.
+- npm installed
+- MongoDB available
+  - local MongoDB or MongoDB Atlas both work
+- `python3` installed
+  - required for the `/api/code/run` feature
+
+### Installation
 
 ### 1. Clone the repository
 
@@ -107,114 +200,228 @@ npm install
 cd ..
 ```
 
-### 4. Create environment variables
+### 4. Create backend environment variables
 
-Create a `backend/.env` file and add the required variables.
+Create a file at:
 
-### 5. Run the backend
+```bash
+backend/.env
+```
+
+Add the following values:
+
+```env
+PORT=8000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+```
+
+### Running the Project
+
+### Start the backend
 
 ```bash
 cd backend
 npm run dev
 ```
 
-### 6. Run the frontend
+The backend starts on:
 
-In a new terminal:
+```text
+http://localhost:8000
+```
+
+### Start the frontend
+
+Open a second terminal in the project root:
 
 ```bash
 npm run dev
 ```
 
-### 7. Open the app
+The frontend starts on:
 
-Frontend: `http://localhost:5173`  
-Backend: `http://localhost:8000`
+```text
+http://localhost:5173
+```
 
----
+### Example Full Local Run
+
+Terminal 1:
+
+```bash
+cd backend
+npm run dev
+```
+
+Terminal 2:
+
+```bash
+npm run dev
+```
+
+Then open:
+
+```text
+Frontend: http://localhost:5173
+Backend:  http://localhost:8000
+```
 
 ## Environment Variables
 
-Create a `backend/.env` file with values like:
+### Required
+
+The application code currently requires these backend variables:
 
 ```env
+PORT=8000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
-PORT=8000
 ```
 
----
+### Optional for Socket Test Script
 
-## Folder Structure
+The script `backend/test/socketTest.js` also reads:
 
-```bash
-LEARN EASY/
-├── src/
-│   ├── api/
-│   ├── assets/
-│   ├── components/
-│   ├── context/
-│   ├── layouts/
-│   ├── pages/
-│   ├── services/
-│   └── utils/
-├── backend/
-│   ├── config/
-│   ├── controllers/
-│   ├── middleware/
-│   ├── middlewares/
-│   ├── models/
-│   ├── routes/
-│   ├── socket/
-│   ├── test/
-│   └── utils/
-└── README.md
+```env
+SOCKET_URL=http://localhost:5000
+TOKEN_A=jwt_for_test_user_a
+TOKEN_B=jwt_for_test_user_b
+ROOM_ID=existing_room_id
+TEST_TIMEOUT_MS=15000
 ```
 
-### Main directories
-- `src/` : Frontend application source
-- `src/components/` : Reusable UI components
-- `src/pages/` : Main application screens
-- `backend/` : Backend server and APIs
-- `backend/controllers/` : Business logic for routes
-- `backend/models/` : MongoDB/Mongoose models
+## Authentication Flow
 
----
+1. A user registers via `POST /api/auth/register`.
+2. A user logs in via `POST /api/auth/login`.
+3. The backend returns a JWT plus user metadata.
+4. The frontend stores the token and user in local storage.
+5. Axios attaches the token as `Authorization: Bearer <token>`.
+6. Protected routes require auth state.
+7. Socket.IO also uses the token during the handshake.
 
-## Key Highlights
+## API Overview
 
-### Real-time collaboration logic
-The collaboration room uses Socket.io to synchronize code changes, chat messages, presence, and output updates in real time. The client is designed to keep a single shared socket instance and rejoin rooms safely when sessions reconnect.
+### Auth
 
-### Room membership + auth protection
-Rooms are protected by JWT-authenticated APIs and socket authentication. Only valid members can access room data or join socket events, helping keep collaboration sessions scoped and secure.
+- `POST /api/auth/register` - create a new user
+- `POST /api/auth/login` - authenticate and return JWT
 
-### Handling 403 / 500 issues
-The project includes improved room membership consistency, safer server-side error handling, and clearer frontend error messaging. This reduces broken room access scenarios and prevents raw backend errors from leaking to the UI.
+### Tasks
 
-### Stable multi-user system
-The room experience is built to support real multi-user activity across refreshes, re-login flows, and reconnect scenarios. Join-by-code flow, membership validation, and reconnect-aware sync help keep participants aligned in the same session.
+- `GET /api/tasks` - fetch current user's tasks
+- `POST /api/tasks` - create a task
+- `PUT /api/tasks/:id` - update a task
+- `DELETE /api/tasks/:id` - delete a task
+- `PATCH /api/tasks/:id/status` - toggle task status
 
----
+### Rooms
+
+- `GET /api/rooms` - fetch rooms where the user is a member
+- `POST /api/rooms/create` - create a new room
+- `POST /api/rooms/join` - join a room using room code
+- `GET /api/rooms/:id` - fetch room details for a member
+- `POST /api/rooms/:id/leave` - leave a room, or delete it if the requester is the host
+- `POST /api/rooms/leave` - alternate leave route using `roomId` in request body
+- `DELETE /api/rooms/:id` - delete a room (creator only)
+
+### Code Execution
+
+- `POST /api/code/run` - execute Python code and return output
+
+## Socket.IO Events
+
+### Client -> Server
+
+- `join-room`
+  - payload: `{ roomId }`
+  - joins a validated room after JWT + membership checks
+
+- `leave-room`
+  - payload: `{ roomId }`
+  - removes the socket from the room and notifies others
+
+- `send-message`
+  - payload: `{ roomId, message }`
+  - sends a chat message to the room
+
+- `code-change`
+  - payload: `{ roomId, code }`
+  - broadcasts incremental/shared editor changes
+
+- `sync-code`
+  - payload: `{ roomId, code }`
+  - sends a full code sync, mainly for reconnects or late joiners
+
+- `code-output`
+  - payload: `{ roomId, output }`
+  - syncs execution output to other room members
+
+### Server -> Client
+
+- `user-joined`
+  - payload: `{ userId, roomId }`
+
+- `user-left`
+  - payload: `{ userId, roomId }`
+
+- `receive-message`
+  - payload: `{ userId, message, timestamp }`
+
+- `receive-code`
+  - payload: `{ code, userId, isFullSync? }`
+
+- `receive-output`
+  - payload: `output`
+
+- `room-deleted`
+  - payload: `{ roomId, deletedBy }`
+
+- `socket-error`
+  - payload: `{ message, code }`
+
+## Frontend Pages
+
+- `/` - public landing page
+- `/login` - login form
+- `/register` - registration form
+- `/dashboard` - authenticated workspace overview
+- `/productivity` - task management
+- `/collaboration` - create/join rooms
+- `/room/:roomId` - real-time collaboration room
+- `/resources` - frontend-only study resource library
+- `/settings` - account/session information
+- `/help` - quick guidance and FAQs
+
+## Known Limitations
+
+- Chat messages are not persisted in MongoDB.
+- Shared code content is not persisted in MongoDB.
+- Presence is socket-based and in-memory; it depends on active connections.
+- The Resources module is currently frontend-only and stored in `localStorage`.
+- Code execution only supports Python.
+- Code execution writes temporary files and runs `python3` on the server.
+- `/api/code/run` is not protected by `authMiddleware` in the current implementation.
+- Collaboration currently supports a single shared code surface rather than multi-file project persistence.
 
 ## Future Improvements
 
-- Live cursor tracking in the editor
-- Multi-file collaboration support
-- Richer code execution environments
-- Typing indicators in chat
-- Production deployment with CI/CD
+- Persist chat history per room
+- Persist room code snapshots and execution output
+- Add richer room presence and typing indicators
+- Add role-based collaboration controls
+- Support more languages and sandboxed execution
+- Move Resources to a real backend API
+- Add notifications and activity feeds
+- Improve automated test coverage
 
----
+## Contributors
 
-## Author
-
-**G. Ganesh**  
-GitHub: https://github.com/G-Ganesh83
-
----
+- G. Ganesh
 
 ## Notes
 
-- This project is designed as a practical full-stack MERN showcase with authentication, productivity tooling, and real-time collaboration.
-- Add actual UI screenshots in the preview section before publishing for the strongest GitHub presentation.
+- The dashboard fetches tasks and rooms in parallel and caches the result in session storage for 30 seconds.
+- Socket room access is validated on the server using both JWT auth and room membership checks.
+- When the host leaves a room through the current flow, the room is deleted and other connected users are notified in real time.
