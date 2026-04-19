@@ -41,6 +41,9 @@ const resolveRoomAccess = async (socket, roomId) => {
   return true;
 };
 
+const getJoinedRoomIds = (socket) =>
+  [...socket.rooms].filter((roomId) => roomId !== socket.id);
+
 const initializeSocketManager = (io) => {
   io.use(async (socket, next) => {
     try {
@@ -104,6 +107,32 @@ const initializeSocketManager = (io) => {
       } catch (error) {
         console.error('Socket Error:', error.message);
         emitSocketError(socket, 'Failed to join room', 'INVALID_INPUT');
+      }
+    });
+
+    socket.on('leave-room', async (payload = {}) => {
+      try {
+        const { roomId } = payload;
+
+        if (!roomId) {
+          emitSocketError(socket, 'Room ID is required', 'INVALID_INPUT');
+          return;
+        }
+
+        if (!socket.rooms.has(roomId)) {
+          return;
+        }
+
+        socket.leave(roomId);
+        console.log(`[LEAVE] user ${socket.user.id} -> room ${roomId}`);
+
+        socket.to(roomId).emit('user-left', {
+          userId: socket.user.id,
+          roomId,
+        });
+      } catch (error) {
+        console.error('Socket Error:', error.message);
+        emitSocketError(socket, 'Failed to leave room', 'INVALID_INPUT');
       }
     });
 
@@ -228,8 +257,27 @@ const initializeSocketManager = (io) => {
       }
     });
 
+    socket.on('disconnecting', () => {
+      try {
+        const joinedRoomIds = getJoinedRoomIds(socket);
+
+        joinedRoomIds.forEach((roomId) => {
+          socket.to(roomId).emit('user-left', {
+            userId: socket.user.id,
+            roomId,
+          });
+        });
+      } catch (error) {
+        console.error('Socket Error:', error.message);
+      }
+    });
+
     socket.on('disconnect', () => {
-      console.log(`[DISCONNECT] user ${socket.user?.id}`);
+      try {
+        console.log(`[DISCONNECT] user ${socket.user?.id}`);
+      } catch (error) {
+        console.error('Socket Error:', error.message);
+      }
     });
   });
 };

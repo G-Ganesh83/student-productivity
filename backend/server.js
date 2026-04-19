@@ -25,6 +25,7 @@ const startServer = async () => {
       },
     });
 
+    app.set('io', io);
     initializeSocketManager(io);
 
     server.listen(PORT, () => {

@@ -291,6 +291,7 @@ export const getRoomDetails = async (req, res) => {
 export const leaveRoom = async (req, res) => {
   try {
     const roomId = req.params.id || req.body.roomId;
+    const io = req.app.get('io');
 
     if (!roomId) {
       return res.status(400).json({
@@ -328,6 +329,13 @@ export const leaveRoom = async (req, res) => {
     const isCreator = creatorId?.toString() === req.user._id.toString();
 
     if (isCreator) {
+      if (io) {
+        io.to(roomId).emit('room-deleted', {
+          roomId,
+          deletedBy: req.user._id.toString(),
+        });
+      }
+
       await room.deleteOne();
 
       return res.status(200).json({
@@ -362,6 +370,8 @@ export const leaveRoom = async (req, res) => {
 
 export const deleteRoom = async (req, res) => {
   try {
+    const io = req.app.get('io');
+
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(404).json({
         success: false,
@@ -386,6 +396,13 @@ export const deleteRoom = async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'Only creator can delete',
+      });
+    }
+
+    if (io) {
+      io.to(req.params.id).emit('room-deleted', {
+        roomId: req.params.id,
+        deletedBy: req.user._id.toString(),
       });
     }
 

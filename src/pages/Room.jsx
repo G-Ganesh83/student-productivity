@@ -86,6 +86,18 @@ function Room() {
   const [isResizeHandleActive, setIsResizeHandleActive] = useState(false);
   const [isRoomCodeCopied, setIsRoomCodeCopied] = useState(false);
 
+  const getEntityId = useCallback((value) => {
+    if (!value) {
+      return "";
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+
+    return value._id || value.id || "";
+  }, []);
+
   const getNextId = useCallback(() => {
     nextIdRef.current += 1;
     return nextIdRef.current;
@@ -356,9 +368,9 @@ function Room() {
         const selfId = currentUserIdRef.current || socket.id;
         const selfName = memberDirectoryRef.current[selfId] || user?.name || "You";
 
-        if (prev.some((user) => user.id === selfId)) {
+        if (prev.some((participant) => getEntityId(participant) === selfId)) {
           return prev.map((existingUser) =>
-            existingUser.id === selfId
+            getEntityId(existingUser) === selfId
               ? { ...existingUser, name: selfName, online: true }
               : existingUser
           );
@@ -426,11 +438,36 @@ function Room() {
       latestCodeRef.current = nextCode;
     };
 
-    const handleUserJoined = (data) => {
+    const handleUserJoined = (data = {}) => {
+      console.log("User joined room:", data);
+
+      const joinedUserId = data.userId;
+
+      if (!joinedUserId) {
+        return;
+      }
+
+      setRoomMembers((prev) => {
+        if (prev.some((member) => getEntityId(member) === joinedUserId)) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            id: joinedUserId,
+            name:
+              memberDirectoryRef.current[joinedUserId] ||
+              (joinedUserId === currentUserIdRef.current ? user?.name || "You" : `User ${String(joinedUserId).slice(-4)}`),
+            email: "",
+          },
+        ];
+      });
+
       setUsers((prev) => {
-        if (prev.some((user) => user.id === data.userId)) {
+        if (prev.some((participant) => getEntityId(participant) === joinedUserId)) {
           return prev.map((existingUser) =>
-            existingUser.id === data.userId
+            getEntityId(existingUser) === joinedUserId
               ? { ...existingUser, online: true }
               : existingUser
           );
@@ -439,15 +476,17 @@ function Room() {
         return [
           ...prev,
           {
-            id: data.userId,
-            name: memberDirectoryRef.current[data.userId] || `User ${String(data.userId).slice(-4)}`,
+            id: joinedUserId,
+            name:
+              memberDirectoryRef.current[joinedUserId] ||
+              (joinedUserId === currentUserIdRef.current ? user?.name || "You" : `User ${String(joinedUserId).slice(-4)}`),
             online: true,
           },
         ];
       });
 
-      if (data.userId !== currentUserIdRef.current) {
-        addToast(`${memberDirectoryRef.current[data.userId] || "A participant"} joined the room`, "success");
+      if (joinedUserId !== currentUserIdRef.current) {
+        addToast(`${memberDirectoryRef.current[joinedUserId] || "A participant"} joined the room`, "success");
       }
 
       loadRoomDetails({ showLoading: false, showErrorToast: false });
@@ -462,8 +501,31 @@ function Room() {
       });
     };
 
+    const handleUserLeft = (data = {}) => {
+      console.log("User left room:", data);
+
+      const leftUserId = data.userId;
+
+      if (!leftUserId) {
+        return;
+      }
+
+      setRoomMembers((prev) =>
+        prev.filter((member) => getEntityId(member) !== leftUserId)
+      );
+
+      setUsers((prev) =>
+        prev.filter((participant) => getEntityId(participant) !== leftUserId)
+      );
+    };
+
     const handleReceiveOutput = (output) => {
       setExecutionOutput(output || "Code ran successfully with no output.");
+    };
+
+    const handleRoomDeleted = (data = {}) => {
+      console.log("Room deleted:", data);
+      redirectToCollaboration("Room was deleted by host");
     };
 
     const handleSocketError = (error) => {
@@ -523,6 +585,8 @@ function Room() {
     socket.off("receive-code", handleReceiveCode);
     socket.off("receive-output", handleReceiveOutput);
     socket.off("user-joined", handleUserJoined);
+    socket.off("user-left", handleUserLeft);
+    socket.off("room-deleted", handleRoomDeleted);
     socket.off("socket-error", handleSocketError);
 
     socket.on("connect", handleConnect);
@@ -532,6 +596,8 @@ function Room() {
     socket.on("receive-code", handleReceiveCode);
     socket.on("receive-output", handleReceiveOutput);
     socket.on("user-joined", handleUserJoined);
+    socket.on("user-left", handleUserLeft);
+    socket.on("room-deleted", handleRoomDeleted);
     socket.on("socket-error", handleSocketError);
 
     return () => {
@@ -545,9 +611,11 @@ function Room() {
       socket.off("receive-code", handleReceiveCode);
       socket.off("receive-output", handleReceiveOutput);
       socket.off("user-joined", handleUserJoined);
+      socket.off("user-left", handleUserLeft);
+      socket.off("room-deleted", handleRoomDeleted);
       socket.off("socket-error", handleSocketError);
     };
-  }, [addToast, isRoomValid, loadRoomDetails, logout, navigate, redirectToCollaboration, roomId, token, user?.name]);
+  }, [addToast, getEntityId, isRoomValid, loadRoomDetails, logout, navigate, redirectToCollaboration, roomId, token, user?.name]);
 
   const handleSendMessage = (message) => {
     const trimmedMessage = message.trim();
@@ -605,6 +673,13 @@ function Room() {
     setIsLeaving(true);
 
     try {
+      const socket = getSocket();
+
+      if (socket.connected) {
+        socket.emit("leave-room", { roomId });
+        hasJoinedRoomRef.current = false;
+      }
+
       const response = await leaveRoom({ roomId });
       const successMessage = response?.deleted ? "Room deleted" : "You left the room";
 
