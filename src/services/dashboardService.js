@@ -1,5 +1,6 @@
 import api from "./api";
 import { getStoredToken } from "../utils/auth";
+import { groupTasks } from "../utils/taskGrouping";
 
 const DASHBOARD_CACHE_KEY = "learn-easy-dashboard-cache";
 const DASHBOARD_CACHE_TTL = 30 * 1000;
@@ -45,19 +46,9 @@ const buildTaskStats = (tasks) => {
 };
 
 const buildProductivityStats = (tasks) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const completed = tasks.filter((task) => task.status === "completed").length;
   const pending = tasks.filter((task) => task.status === "pending").length;
-  const overdue = tasks.filter((task) => {
-    if (task.status !== "pending" || !task.dueDate) {
-      return false;
-    }
-
-    const dueDate = new Date(task.dueDate);
-    return !Number.isNaN(dueDate.getTime()) && dueDate < today;
-  }).length;
+  const overdue = groupTasks(tasks).overdue.filter((task) => task.status !== "completed").length;
   const total = completed + pending;
 
   return {

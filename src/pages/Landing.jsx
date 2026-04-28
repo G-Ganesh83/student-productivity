@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
+import { useAuth } from "../context/AuthContext";
 
 const FLOATING_CARDS = [
   {
@@ -102,9 +103,38 @@ const CTA_LINKS = [
 ];
 
 function Landing() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  const userName = user?.name?.trim() || user?.username?.trim() || user?.email?.trim() || "";
+
+  const handleGetStarted = () => {
+    navigate(isAuthenticated ? "/dashboard" : "/register");
+  };
+
+  const heroGreeting = isAuthenticated && userName ? `Welcome back, ${userName}` : "";
+  const heroPrimaryLabel = isAuthenticated ? "Go to Dashboard" : "Get Started";
+  const exploreLinkTo = isAuthenticated ? "/dashboard" : "/register";
+  const exploreLinkLabel = isAuthenticated ? "Go to Dashboard" : "Create account";
+  const ctaTitle = isAuthenticated
+    ? "Continue your productivity journey"
+    : "Ready to study smarter with one calm workspace?";
+  const ctaDescription = isAuthenticated
+    ? "Pick up where you left off with your dashboard, tasks, rooms, and study flow already in place."
+    : "Create your account, open a room, and keep planning, coding, and course material connected from day one.";
+  const ctaButtonLabel = isAuthenticated ? "Go to Dashboard" : "Create your account";
+  const ctaButtonTo = isAuthenticated ? "/dashboard" : "/register";
+
   return (
     <div className="overflow-x-hidden bg-[#F8FAFC] text-slate-900">
-      <Hero floatingCards={FLOATING_CARDS} />
+      <Hero
+        floatingCards={FLOATING_CARDS}
+        greeting={heroGreeting}
+        isAuthenticated={isAuthenticated}
+        onPrimaryAction={handleGetStarted}
+        primaryActionLabel={heroPrimaryLabel}
+        secondaryActionTo="/login"
+        secondaryActionLabel="Join a room"
+      />
 
       <section className="bg-[#F8FAFC] pb-14 pt-4 sm:pb-18">
         <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
@@ -225,10 +255,10 @@ function Landing() {
               </h2>
             </div>
             <Link
-              to="/register"
+              to={exploreLinkTo}
               className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition duration-200 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950 sm:w-auto"
             >
-              Create account
+              {exploreLinkLabel}
             </Link>
           </div>
 
@@ -346,16 +376,16 @@ function Landing() {
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <p className="font-ui text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-700">Start now</p>
           <h2 className="mt-4 font-display text-3xl leading-[0.95] tracking-[-0.04em] text-slate-900 sm:text-5xl">
-            Ready to study smarter with one calm workspace?
+            {ctaTitle}
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-[1.02rem] sm:leading-8">
-            Create your account, open a room, and keep planning, coding, and course material connected from day one.
+            {ctaDescription}
           </p>
           <Link
-            to="/register"
+            to={ctaButtonTo}
             className="font-ui mt-8 inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-button transition duration-200 hover:scale-[1.02] hover:bg-slate-800 sm:w-auto"
           >
-            Create your account
+            {ctaButtonLabel}
           </Link>
         </div>
       </section>

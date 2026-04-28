@@ -3,7 +3,19 @@ import { Link } from "react-router-dom";
 import collabAnimation from "../assets/collab-animation.json";
 import FeatureCard from "./FeatureCard";
 
-function Hero({ floatingCards }) {
+function Hero({
+  floatingCards,
+  greeting,
+  isAuthenticated = false,
+  onPrimaryAction,
+  primaryActionLabel = "Get Started",
+  secondaryActionTo = "/login",
+  secondaryActionLabel = "Join a room",
+}) {
+  const ctaContainerClassName = isAuthenticated
+    ? "mt-5 flex w-full flex-col gap-3 sm:mt-6 sm:flex-row sm:items-center lg:w-auto"
+    : "mt-8 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center lg:w-auto";
+
   return (
     <section className="border-b border-slate-200/80 bg-[linear-gradient(180deg,#f8fafc_0%,#f8fafc_82%,#f4f8fc_100%)]">
       <div className="mx-auto max-w-[1200px] px-4 pb-14 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-6 lg:pb-20 lg:pt-14">
@@ -29,19 +41,30 @@ function Hero({ floatingCards }) {
               Plan tasks, code together in real-time, and share resources — all in one focused workspace.
             </p>
 
-            <div className="mt-8 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center lg:w-auto">
-              <Link
-                to="/register"
-                className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:bg-slate-800 sm:w-auto"
+            {greeting ? (
+              <p className="mt-4 font-ui text-sm font-medium text-sky-700 sm:text-base">
+                {greeting}
+              </p>
+            ) : null}
+
+            <div className={ctaContainerClassName}>
+              <button
+                type="button"
+                onClick={onPrimaryAction}
+                className={`font-ui inline-flex min-h-[46px] items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:bg-slate-800 ${
+                  isAuthenticated ? "w-full sm:min-w-[220px] sm:w-auto" : "w-full sm:w-auto"
+                }`}
               >
-                Get Started
-              </Link>
-              <Link
-                to="/collaboration"
-                className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-slate-300 bg-transparent px-5 py-3 text-sm font-medium text-slate-700 transition duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-950 sm:w-auto"
-              >
-                Join a room
-              </Link>
+                {primaryActionLabel}
+              </button>
+              {!isAuthenticated ? (
+                <Link
+                  to={secondaryActionTo}
+                  className="font-ui inline-flex min-h-[46px] w-full items-center justify-center rounded-full border border-slate-300 bg-transparent px-5 py-3 text-sm font-medium text-slate-700 transition duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-950 sm:w-auto"
+                >
+                  {secondaryActionLabel}
+                </Link>
+              ) : null}
             </div>
           </div>
 

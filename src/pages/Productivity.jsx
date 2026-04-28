@@ -6,6 +6,7 @@ import Card from "../components/Card";
 import Input from "../components/Input";
 import Modal from "../components/Modal";
 import SearchInput from "../components/SearchInput";
+import TaskGroup from "../components/TaskGroup";
 import Textarea from "../components/Textarea";
 import ToastContainer from "../components/ToastContainer";
 import {
@@ -20,6 +21,7 @@ import {
   toggleTaskStatus as toggleTaskStatusRequest,
   updateTask as updateTaskRequest,
 } from "../api/taskApi";
+import { getTaskGroup, groupTasks } from "../utils/taskGrouping";
 
 const STATUS_CONFIG = {
   completed: { label: "Completed", dot: "bg-emerald-500", text: "bg-emerald-50 text-emerald-700" },
@@ -56,21 +58,131 @@ const FILTER_TABS = [
   { id: "completed", label: "Completed" },
 ];
 
-const isTaskOverdue = (task) => {
-  if (task.status !== "pending" || !task.dueDate) {
-    return false;
+const TASK_GROUP_ORDER = ["today", "tomorrow", "upcoming", "overdue", "noDate", "completed"];
+const DATE_TASK_GROUP_ORDER = TASK_GROUP_ORDER.filter((groupKey) => groupKey !== "completed");
+
+const CalendarIcon = ({ className = "h-4 w-4" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const WarningIcon = ({ className = "h-4 w-4" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-7.55 13.09A1 1 0 003.61 18h16.78a1 1 0 00.87-1.5L13.71 3.86a1 1 0 00-1.74 0z" />
+  </svg>
+);
+
+const CheckIcon = ({ className = "h-4 w-4" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const InboxIcon = ({ className = "h-4 w-4" }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 13.5V6a2 2 0 012-2h12a2 2 0 012 2v7.5m-16 0l2.1 3.15A2 2 0 007.76 18h8.48a2 2 0 001.66-.9L20 13.5m-16 0h4.5a1.5 1.5 0 001.34.83h4.32a1.5 1.5 0 001.34-.83H20" />
+  </svg>
+);
+
+const TASK_GROUP_CONFIG = {
+  today: {
+    title: "Today",
+    description: "Immediate priorities that need attention now.",
+    icon: CalendarIcon,
+    sectionClassName: "border-sky-200/80 bg-gradient-to-br from-sky-50 via-white to-white",
+    badgeClassName: "bg-sky-100 text-sky-700 ring-sky-200/80",
+    iconClassName: "bg-sky-100 text-sky-700 ring-sky-200/80",
+    progressClassName: "bg-sky-500",
+  },
+  tomorrow: {
+    title: "Tomorrow",
+    description: "Ready to roll into the next day.",
+    icon: CalendarIcon,
+    sectionClassName: "border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-white",
+    badgeClassName: "bg-violet-100 text-violet-700 ring-violet-200/80",
+    iconClassName: "bg-violet-100 text-violet-700 ring-violet-200/80",
+    progressClassName: "bg-violet-500",
+  },
+  upcoming: {
+    title: "Upcoming",
+    description: "Planned work coming up over the next week.",
+    icon: CalendarIcon,
+    sectionClassName: "border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-white",
+    badgeClassName: "bg-slate-100 text-slate-700 ring-slate-200/80",
+    iconClassName: "bg-slate-100 text-slate-700 ring-slate-200/80",
+    progressClassName: "bg-slate-500",
+  },
+  overdue: {
+    title: "Overdue",
+    description: "Past due and worth pulling back into focus.",
+    icon: WarningIcon,
+    sectionClassName: "border-red-200/80 bg-gradient-to-br from-red-50 via-white to-white",
+    badgeClassName: "bg-red-100 text-red-700 ring-red-200/80",
+    iconClassName: "bg-red-100 text-red-700 ring-red-200/80",
+    progressClassName: "bg-red-500",
+  },
+  noDate: {
+    title: "No Date",
+    description: "Open tasks without a scheduled due date.",
+    icon: InboxIcon,
+    sectionClassName: "border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50",
+    badgeClassName: "bg-slate-100 text-slate-700 ring-slate-200/80",
+    iconClassName: "bg-slate-100 text-slate-700 ring-slate-200/80",
+    progressClassName: "bg-slate-400",
+  },
+  completed: {
+    title: "Completed",
+    description: "Finished work, tucked away and easy to scan.",
+    icon: CheckIcon,
+    sectionClassName: "border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-white",
+    badgeClassName: "bg-emerald-100 text-emerald-700 ring-emerald-200/80",
+    iconClassName: "bg-emerald-100 text-emerald-700 ring-emerald-200/80",
+    progressClassName: "bg-emerald-500",
+  },
+};
+
+const isTaskCompleted = (task) => task?.status === "completed";
+const getTaskKey = (task, fallbackIndex = 0) => task?._id || task?.id || `${task?.title || "task"}-${task?.dueDate || "no-date"}-${fallbackIndex}`;
+
+const getTaskGroupSummary = (groupKey, groupedTasks) => {
+  const items = groupedTasks[groupKey] || [];
+  const completedCount = items.filter(isTaskCompleted).length;
+  const totalCount = items.length;
+  const progress = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  return {
+    key: groupKey,
+    items,
+    totalCount,
+    completedCount,
+    progress: Number.isFinite(progress) ? Math.max(0, Math.min(progress, 100)) : 0,
+    config: TASK_GROUP_CONFIG[groupKey],
+  };
+};
+
+const isTaskOverdue = (task) => !isTaskCompleted(task) && getTaskGroup(task) === "overdue";
+
+const getDueLabel = (task) => {
+  if (isTaskCompleted(task)) {
+    return null;
   }
 
-  const dueDate = new Date(task.dueDate);
+  const taskGroup = getTaskGroup(task);
 
-  if (Number.isNaN(dueDate.getTime())) {
-    return false;
+  if (taskGroup === "today") {
+    return { label: "Due Today", className: "bg-sky-50 text-sky-700 ring-sky-200/80" };
   }
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  if (taskGroup === "tomorrow") {
+    return { label: "Tomorrow", className: "bg-violet-50 text-violet-700 ring-violet-200/80" };
+  }
 
-  return dueDate < today;
+  if (taskGroup === "overdue") {
+    return { label: "Overdue", className: "bg-red-50 text-red-700 ring-red-200/80" };
+  }
+
+  return null;
 };
 
 const formatElapsedTime = (totalSeconds) => {
@@ -145,6 +257,7 @@ function Productivity() {
   const [activeSession, setActiveSession] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
+  const [activeGroup, setActiveGroup] = useState("today");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -228,6 +341,37 @@ function Productivity() {
     [tasks, searchQuery, statusFilter, priorityFilter]
   );
 
+  const groupedFilteredTasks = useMemo(
+    () =>
+      groupTasks(filteredTasks, new Date(), {
+        includeCompletedInDateGroups: statusFilter !== "completed",
+      }),
+    [filteredTasks, statusFilter]
+  );
+
+  const visibleTaskGroups = useMemo(
+    () =>
+      TASK_GROUP_ORDER.map((groupKey) => getTaskGroupSummary(groupKey, groupedFilteredTasks)).filter(
+        (group) => group.totalCount > 0
+      ),
+    [groupedFilteredTasks]
+  );
+
+  useEffect(() => {
+    if (visibleTaskGroups.length === 0 || activeGroup === null) {
+      return;
+    }
+
+    if (visibleTaskGroups.some((group) => group.key === activeGroup)) {
+      return;
+    }
+
+    const nextDefaultGroup =
+      visibleTaskGroups.find((group) => DATE_TASK_GROUP_ORDER.includes(group.key)) || visibleTaskGroups[0] || null;
+
+    setActiveGroup(nextDefaultGroup?.key || null);
+  }, [activeGroup, visibleTaskGroups]);
+
   const validateForm = () => {
     const nextErrors = {};
 
@@ -297,6 +441,11 @@ function Productivity() {
       };
 
       if (editingTask) {
+        const optimisticTask = { ...editingTask, ...payload };
+
+        setTasks((prev) => prev.map((task) => (task._id === editingTask._id ? optimisticTask : task)));
+        closeModal();
+
         const response = await updateTaskRequest(editingTask._id, payload);
         const updatedTask = response?.data;
 
@@ -314,11 +463,13 @@ function Productivity() {
         }
 
         addToast("Task created", "success");
+        closeModal();
       }
-
-      closeModal();
     } catch (requestError) {
       const message = getTaskApiErrorMessage(requestError, "Unable to save task.");
+      if (editingTask) {
+        setTasks((prev) => prev.map((task) => (task._id === editingTask._id ? editingTask : task)));
+      }
       setError(message);
       addToast(message, "error");
     } finally {
@@ -331,14 +482,27 @@ function Productivity() {
       return;
     }
 
+    const taskToDelete = tasks.find((task) => task._id === id);
+
+    if (!taskToDelete) {
+      return;
+    }
+
     try {
       setIsDeletingTaskId(id);
       setError("");
-      await deleteTaskRequest(id);
       setTasks((prev) => prev.filter((task) => task._id !== id));
+      await deleteTaskRequest(id);
       addToast("Task deleted", "success");
     } catch (requestError) {
       const message = getTaskApiErrorMessage(requestError, "Unable to delete task.");
+      setTasks((prev) => {
+        if (prev.some((task) => task._id === taskToDelete._id)) {
+          return prev;
+        }
+
+        return [taskToDelete, ...prev];
+      });
       setError(message);
       addToast(message, "error");
     } finally {
@@ -347,9 +511,21 @@ function Productivity() {
   };
 
   const toggleStatus = async (id) => {
+    const taskToToggle = tasks.find((task) => task._id === id);
+
+    if (!taskToToggle) {
+      return;
+    }
+
+    const optimisticTask = {
+      ...taskToToggle,
+      status: taskToToggle.status === "completed" ? "pending" : "completed",
+    };
+
     try {
       setIsTogglingTaskId(id);
       setError("");
+      setTasks((prev) => prev.map((task) => (task._id === id ? optimisticTask : task)));
       const response = await toggleTaskStatusRequest(id);
       const updatedTask = response?.data;
 
@@ -359,6 +535,7 @@ function Productivity() {
       }
     } catch (requestError) {
       const message = getTaskApiErrorMessage(requestError, "Unable to update task status.");
+      setTasks((prev) => prev.map((task) => (task._id === id ? taskToToggle : task)));
       setError(message);
       addToast(message, "error");
     } finally {
@@ -446,6 +623,10 @@ function Productivity() {
     setPriorityFilter("all");
   };
 
+  const handleToggleGroup = (groupKey) => {
+    setActiveGroup((currentGroup) => (currentGroup === groupKey ? null : groupKey));
+  };
+
   const openFocusMode = (task) => {
     if (!activeSession?.sessionId || !activeSession?.startTime) {
       return;
@@ -468,7 +649,7 @@ function Productivity() {
 
   const hasFilters = searchQuery || statusFilter !== "all" || priorityFilter !== "all";
   const total = tasks.length;
-  const done = tasks.filter((task) => task.status === "completed").length;
+  const done = tasks.filter(isTaskCompleted).length;
   const pending = tasks.filter((task) => task.status === "pending").length;
 
   return (
@@ -604,184 +785,236 @@ function Productivity() {
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredTasks.map((task) => {
-            const statusConfig = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending;
-            const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
-            const categoryConfig = CATEGORY_CONFIG[task.category] || CATEGORY_CONFIG.study;
-            const isDone = task.status === "completed";
-            const isOverdue = isTaskOverdue(task);
-            const isActiveSessionTask = activeSession?.taskId === task._id;
-            const hasOtherActiveSession = Boolean(activeSession) && !isActiveSessionTask;
-            const isStartingSession = isStartingSessionTaskId === task._id;
-            const isBusy =
-              isSavingTask ||
-              isDeletingTaskId === task._id ||
-              isTogglingTaskId === task._id ||
-              isStartingSession;
+        <div className="space-y-5">
+          {visibleTaskGroups.map((group) => {
+            const isOpen = activeGroup === group.key;
 
             return (
-              <div
-                key={task._id}
-                onClick={() => !isBusy && openModal(task)}
-                className={`cursor-pointer rounded-3xl border p-5 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg sm:p-6 ${
-                  isActiveSessionTask
-                    ? "scale-[1.01] border-sky-300 bg-gradient-to-r from-sky-50 via-white to-sky-50 shadow-[0_22px_55px_-30px_rgba(14,165,233,0.75)] ring-1 ring-sky-200/80"
-                    : "border-slate-200/80 bg-white hover:bg-slate-50/80"
-                }`}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if ((event.key === "Enter" || event.key === " ") && !isBusy) {
-                    event.preventDefault();
-                    openModal(task);
-                  }
-                }}
+              <TaskGroup
+                key={group.key}
+                groupKey={group.key}
+                title={group.config.title}
+                description={group.config.description}
+                icon={group.config.icon}
+                totalCount={group.totalCount}
+                completedCount={group.completedCount}
+                progress={group.progress}
+                isOpen={isOpen}
+                onToggle={() => handleToggleGroup(group.key)}
+                sectionClassName={`${group.config.sectionClassName} page-enter`}
+                badgeClassName={group.config.badgeClassName}
+                iconClassName={group.config.iconClassName}
+                progressClassName={group.config.progressClassName}
               >
-                <div className="flex items-start gap-5">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      toggleStatus(task._id);
-                    }}
-                    disabled={isBusy}
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition duration-200 ${
-                      isDone
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-slate-300 bg-white text-transparent hover:border-slate-400"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
-                    aria-label={isDone ? "Mark task as pending" : "Mark task as completed"}
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
+                <div className="space-y-3">
+                  {group.items.map((task, taskIndex) => {
+                    const statusConfig = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending;
+                    const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
+                    const categoryConfig = CATEGORY_CONFIG[task.category] || CATEGORY_CONFIG.study;
+                    const dueLabel = getDueLabel(task);
+                    const isDone = isTaskCompleted(task);
+                    const isOverdue = isTaskOverdue(task);
+                    const isActiveSessionTask = activeSession?.taskId === task._id;
+                    const hasOtherActiveSession = Boolean(activeSession) && !isActiveSessionTask;
+                    const isStartingSession = isStartingSessionTaskId === task._id;
+                    const isDeleting = isDeletingTaskId === task._id;
+                    const isTaskActionBusy =
+                      isSavingTask ||
+                      isDeleting ||
+                      isTogglingTaskId === task._id ||
+                      isStartingSession;
+                    const canInteractWithTask = !isDone && !isTaskActionBusy;
 
-                  <div className="min-w-0 flex-1">
-                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                      <div className="min-w-0 flex-1 space-y-3.5">
-                        <div className="flex items-start gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${statusConfig.dot}`} aria-hidden="true" />
-                          <p
-                            className={`min-w-0 text-base font-medium leading-6 transition-all duration-200 ${
-                              isDone ? "text-slate-400 line-through" : "text-slate-900"
-                            }`}
-                          >
-                            {task.title}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${categoryConfig.className}`}
-                          >
-                            {categoryConfig.label}
-                          </span>
-                          <span
-                            className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${priorityConfig.className}`}
-                          >
-                            {priorityConfig.label}
-                          </span>
-                        </div>
-                        {task.description ? (
-                          <p
-                            className={`text-sm leading-6 ${
-                              isDone ? "text-slate-400" : "text-slate-600"
-                            }`}
-                          >
-                            {task.description}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="flex shrink-0 flex-wrap items-center gap-4 lg:justify-end">
-                        {isActiveSessionTask ? (
-                          <div className="min-w-[120px] text-left text-sky-700 transition-all duration-200 lg:text-center">
-                            <p className="text-[11px] font-medium leading-none text-slate-500">
-                              Running
-                            </p>
-                            <p className="mt-1 text-[11px] font-medium leading-none text-slate-500">
-                              Focus Time
-                            </p>
-                            <p className="mt-2 font-ui text-3xl font-bold leading-none text-sky-950 pulse-dot transition-all duration-200">
-                              {formatElapsedTime(elapsedSeconds)}
-                            </p>
-                          </div>
-                        ) : null}
-                        {isActiveSessionTask ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openFocusMode(task);
-                              }}
-                              className="font-ui inline-flex h-10 items-center rounded-full bg-sky-600 px-5 text-xs font-semibold text-white shadow-sm shadow-sky-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-sky-700 hover:shadow-md"
-                            >
-                              Focus Mode
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleEndSession();
-                              }}
-                              disabled={isEndingSession}
-                              className="font-ui inline-flex h-10 items-center rounded-full bg-red-500 px-5 text-xs font-semibold text-white shadow-sm shadow-red-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-red-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isEndingSession ? "Stopping..." : "Stop Session"}
-                            </button>
-                          </>
-                        ) : null}
-
-                        {!isDone && !isActiveSessionTask ? (
+                    return (
+                      <div
+                        key={`${group.key}-${getTaskKey(task, taskIndex)}`}
+                        onClick={() => {
+                          if (canInteractWithTask) {
+                            openModal(task);
+                          }
+                        }}
+                        className={`rounded-3xl border p-5 shadow-card transition-all duration-200 ease-out sm:p-6 ${
+                          isDone
+                            ? "cursor-default border-white/80 bg-white/75 opacity-65"
+                            : isActiveSessionTask
+                              ? "scale-[1.01] cursor-pointer border-sky-300 bg-gradient-to-r from-sky-50 via-white to-sky-50 shadow-[0_22px_55px_-30px_rgba(14,165,233,0.75)] ring-1 ring-sky-200/80"
+                              : "cursor-pointer border-white/80 bg-white/90 hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+                        }`}
+                        role={canInteractWithTask ? "button" : undefined}
+                        tabIndex={canInteractWithTask ? 0 : undefined}
+                        onKeyDown={(event) => {
+                          if ((event.key === "Enter" || event.key === " ") && canInteractWithTask) {
+                            event.preventDefault();
+                            openModal(task);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-5">
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
-                              openSessionModeModal(task);
+                              toggleStatus(task._id);
                             }}
-                            disabled={isBusy || hasOtherActiveSession}
-                            title={hasOtherActiveSession ? "Finish current session first" : undefined}
-                            className="font-ui inline-flex h-10 items-center rounded-full bg-sky-600 px-5 text-xs font-semibold text-white shadow-sm shadow-sky-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-sky-700 hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-sm"
+                            disabled={isDone || isTaskActionBusy}
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition duration-200 ${
+                              isDone
+                                ? "border-emerald-500 bg-emerald-500 text-white"
+                                : "border-slate-300 bg-white text-transparent hover:border-slate-400"
+                            } disabled:cursor-not-allowed disabled:opacity-60`}
+                            aria-label={isDone ? "Mark task as pending" : "Mark task as completed"}
                           >
-                            {isStartingSession ? "Starting..." : "Start Session"}
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
                           </button>
-                        ) : null}
 
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDeleteTask(task._id);
-                          }}
-                          disabled={isBusy}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition duration-200 hover:bg-white hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-                          aria-label="Delete task"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                              <div className="min-w-0 flex-1 space-y-3.5">
+                                <div className="flex items-start gap-2">
+                                  <span className={`mt-1 h-2.5 w-2.5 rounded-full ${statusConfig.dot}`} aria-hidden="true" />
+                                  <p
+                                    className={`min-w-0 text-base font-medium leading-6 transition-all duration-200 ${
+                                      isDone ? "text-slate-400 line-through decoration-slate-300" : "text-slate-900"
+                                    }`}
+                                  >
+                                    {task.title}
+                                  </p>
+                                </div>
 
-                    {task.dueDate ? (
-                      <div
-                        className={`mt-3 flex items-center gap-1.5 text-xs font-medium ${
-                          isOverdue ? "text-red-600" : "text-slate-500"
-                        }`}
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Due {new Date(task.dueDate).toLocaleDateString()}
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {dueLabel ? (
+                                    <span
+                                      className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${dueLabel.className}`}
+                                    >
+                                      {dueLabel.label}
+                                    </span>
+                                  ) : null}
+                                  <span
+                                    className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${categoryConfig.className}`}
+                                  >
+                                    {categoryConfig.label}
+                                  </span>
+                                  <span
+                                    className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${priorityConfig.className}`}
+                                  >
+                                    {priorityConfig.label}
+                                  </span>
+                                </div>
+                                {task.description ? (
+                                  <p className={`text-sm leading-6 ${isDone ? "text-slate-400" : "text-slate-600"}`}>
+                                    {task.description}
+                                  </p>
+                                ) : null}
+                              </div>
+
+                              <div className="flex shrink-0 flex-wrap items-center gap-4 lg:justify-end">
+                                {!isDone && isActiveSessionTask ? (
+                                  <div className="min-w-[120px] text-left text-sky-700 transition-all duration-200 lg:text-center">
+                                    <p className="text-[11px] font-medium leading-none text-slate-500">
+                                      Running
+                                    </p>
+                                    <p className="mt-1 text-[11px] font-medium leading-none text-slate-500">
+                                      Focus Time
+                                    </p>
+                                    <p className="mt-2 font-ui text-3xl font-bold leading-none text-sky-950 pulse-dot transition-all duration-200">
+                                      {formatElapsedTime(elapsedSeconds)}
+                                    </p>
+                                  </div>
+                                ) : null}
+                                {!isDone && isActiveSessionTask ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        openFocusMode(task);
+                                      }}
+                                      className="font-ui inline-flex h-10 items-center rounded-full bg-sky-600 px-5 text-xs font-semibold text-white shadow-sm shadow-sky-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-sky-700 hover:shadow-md"
+                                    >
+                                      Focus Mode
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleEndSession();
+                                      }}
+                                      disabled={isEndingSession}
+                                      className="font-ui inline-flex h-10 items-center rounded-full bg-red-500 px-5 text-xs font-semibold text-white shadow-sm shadow-red-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-red-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {isEndingSession ? "Stopping..." : "Stop Session"}
+                                    </button>
+                                  </>
+                                ) : null}
+
+                                {!isDone && !isActiveSessionTask ? (
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openSessionModeModal(task);
+                                    }}
+                                    disabled={isTaskActionBusy || hasOtherActiveSession}
+                                    title={hasOtherActiveSession ? "Finish current session first" : undefined}
+                                    className="font-ui inline-flex h-10 items-center rounded-full bg-sky-600 px-5 text-xs font-semibold text-white shadow-sm shadow-sky-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-sky-700 hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-sm"
+                                  >
+                                    {isStartingSession ? "Starting..." : "Start Session"}
+                                  </button>
+                                ) : null}
+
+                                {!isDone ? (
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openModal(task);
+                                    }}
+                                    disabled={isTaskActionBusy}
+                                    className="inline-flex h-8 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition duration-200 hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                                    aria-label="Edit task"
+                                  >
+                                    Edit
+                                  </button>
+                                ) : null}
+
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleDeleteTask(task._id);
+                                  }}
+                                  disabled={isDeleting}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition duration-200 hover:bg-white hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                  aria-label="Delete task"
+                                >
+                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+
+                            {task.dueDate ? (
+                              <div
+                                className={`mt-3 flex items-center gap-1.5 text-xs font-medium ${
+                                  isOverdue ? "text-red-600" : "text-slate-500"
+                                }`}
+                              >
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Due {new Date(task.dueDate).toLocaleDateString()}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
-                    ) : null}
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
+              </TaskGroup>
             );
           })}
         </div>

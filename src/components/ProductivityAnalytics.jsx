@@ -1,11 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 
 import {
   getDailySessionSummary,
   getTaskSessionInsights,
   getWeeklySessionSummary,
 } from "../api/sessionApi";
-import { formatDuration, formatTaskName, generateInsights, normalizeStreak } from "../utils/sessionAnalytics";
+import {
+  formatDuration,
+  formatTaskName,
+  generateInsights,
+  getCurrentSessionStreak,
+  getDailyFocusTotals,
+  getSessionCreatedAt,
+  getWeeklyFocusSummary,
+  normalizeStreak,
+} from "../utils/sessionAnalytics";
 
 const EMPTY_DAILY_SUMMARY = {
   totalFocusTime: 0,
@@ -34,39 +44,40 @@ const readNumber = (...values) => {
 };
 
 const getDayLabel = (value) => {
-  const date = value ? new Date(value) : null;
+  const date = getSessionCreatedAt({ createdAt: value });
 
-  if (!date || Number.isNaN(date.getTime())) {
+  if (!date) {
     return "";
   }
 
-  return date.toLocaleDateString(undefined, { weekday: "short" });
+  return format(date, "EEE");
 };
 
 const normalizeDailySummary = (response) => {
   const payload = unwrapPayload(response);
-  const sessions = Array.isArray(payload.sessions)
-    ? payload.sessions
-    : Array.isArray(payload.todaySessions)
-      ? payload.todaySessions
-      : [];
-  const sessionTotal = sessions.reduce((total, session) => {
-    const duration = Number(session.duration ?? session.totalDuration ?? session.totalFocusTime);
-
-    return total + (Number.isFinite(duration) ? Math.max(0, duration) : 0);
-  }, 0);
+  const allSessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+  const todaySessionsPayload = Array.isArray(payload.todaySessions) ? payload.todaySessions : [];
+  const sessions = allSessions.length ? allSessions : todaySessionsPayload;
+  const {
+    todaySessions,
+    totalFocusTimeToday,
+    totalFocusTimeYesterday,
+  } = getDailyFocusTotals(allSessions.length ? allSessions : todaySessionsPayload);
   const providedTotalFocusTime = readNumber(
     payload.totalFocusTime,
     payload.totalDuration,
     payload.duration,
     payload.today
   );
+  const providedYesterdayFocusTime = readNumber(payload.yesterdayFocusTime, payload.yesterdayDuration, payload.yesterday);
+  const providedSessionCount = readNumber(payload.sessionCount, payload.totalSessions);
+  const providedStreak = normalizeStreak(readNumber(payload.currentStreak, payload.streak));
 
   return {
-    totalFocusTime: sessions.length && providedTotalFocusTime === 0 ? sessionTotal : providedTotalFocusTime,
-    sessionCount: sessions.length || readNumber(payload.sessionCount, payload.totalSessions),
-    currentStreak: normalizeStreak(readNumber(payload.currentStreak, payload.streak)),
-    yesterdayFocusTime: readNumber(payload.yesterdayFocusTime, payload.yesterdayDuration, payload.yesterday),
+    totalFocusTime: todaySessionsPayload.length || allSessions.length ? totalFocusTimeToday || providedTotalFocusTime : providedTotalFocusTime,
+    sessionCount: allSessions.length ? todaySessions.length : todaySessionsPayload.length || providedSessionCount,
+    currentStreak: allSessions.length ? providedStreak || getCurrentSessionStreak(allSessions) : providedStreak,
+    yesterdayFocusTime: allSessions.length ? totalFocusTimeYesterday : providedYesterdayFocusTime,
     sessions,
   };
 };
@@ -74,6 +85,11 @@ const normalizeDailySummary = (response) => {
 const normalizeWeeklySummary = (response) => {
   const payload = unwrapPayload(response);
   const items = Array.isArray(payload) ? payload : payload.days || payload.week || payload.summary || [];
+  const sessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+
+  if (!items.length && sessions.length) {
+    return getWeeklyFocusSummary(sessions);
+  }
 
   return items.slice(-7).map((item, index) => {
     const date = item.date || item.day || item._id;
@@ -184,6 +200,7 @@ function ProductivityAnalytics({ onDailySummaryChange }) {
       focusTimeToday: dailySummary.totalFocusTime,
       insights: taskInsights,
       sessions: dailySummary.sessions,
+      yesterdaySessions: dailySummary.yesterdaySessions || [],
       sessionsToday: dailySummary.sessionCount,
       streak: dailySummary.currentStreak,
       weekly: weeklySummary,
@@ -282,9 +299,9 @@ function ProductivityAnalytics({ onDailySummaryChange }) {
                       Consistency (last 7 days)
                     </p>
                     <div className="mt-2 flex justify-end gap-1">
-                      {consistencyItems.map((item) => (
+                      {consistencyItems.map((item, index) => (
                         <span
-                          key={item.label}
+                          key={`${item.label}-${index}`}
                           className={`h-2.5 w-5 rounded-full ${
                             item.totalFocusTime > 0 ? "bg-sky-600" : "bg-slate-200"
                           }`}
@@ -299,13 +316,13 @@ function ProductivityAnalytics({ onDailySummaryChange }) {
                   {(analyticsData.weekly.length ? analyticsData.weekly : Array.from({ length: 7 }, (_, index) => ({
                     label: `Day ${index + 1}`,
                     totalFocusTime: 0,
-                  }))).map((item) => {
+                  }))).map((item, index) => {
                     const height = maxWeeklyFocusTime
                       ? Math.max(14, Math.min(88, Math.round((item.totalFocusTime / maxWeeklyFocusTime) * 82)))
                       : 10;
 
                     return (
-                      <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                      <div key={`${item.label}-${index}`} className="flex min-w-0 flex-1 flex-col items-center gap-2">
                         <div className="flex h-36 w-full items-end">
                           <div
                             className="w-full rounded-t-lg bg-sky-500 transition-all duration-500"
@@ -327,8 +344,8 @@ function ProductivityAnalytics({ onDailySummaryChange }) {
                 </div>
 
                 <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-4">
-                  {insightMessages.map((message) => (
-                    <p key={message} className="text-sm font-medium leading-6 text-slate-700">
+                  {insightMessages.map((message, index) => (
+                    <p key={`${message}-${index}`} className="text-sm font-medium leading-6 text-slate-700">
                       {message}
                     </p>
                   ))}

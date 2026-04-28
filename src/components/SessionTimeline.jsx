@@ -1,6 +1,12 @@
 import { useMemo } from "react";
 
-import { formatDuration, formatTaskName } from "../utils/sessionAnalytics";
+import {
+  filterSessionsByDate,
+  formatDuration,
+  formatTaskName,
+  getSessionCreatedAt,
+  getSessionDuration,
+} from "../utils/sessionAnalytics";
 
 const getSessionTaskName = (session) =>
   session.taskName ||
@@ -9,23 +15,6 @@ const getSessionTaskName = (session) =>
   session.task?.title ||
   session.task?.name ||
   "Untitled task";
-
-const getSessionDuration = (session) => {
-  const duration = Number(session.duration ?? session.totalDuration ?? session.totalFocusTime);
-
-  if (Number.isFinite(duration) && duration > 0) {
-    return duration;
-  }
-
-  const startTime = new Date(session.startTime).getTime();
-  const endTime = new Date(session.endTime).getTime();
-
-  if (Number.isNaN(startTime) || Number.isNaN(endTime)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.round((endTime - startTime) / 1000));
-};
 
 const formatSessionTime = (value) => {
   const date = new Date(value);
@@ -43,26 +32,17 @@ const formatSessionTime = (value) => {
 
 function SessionTimeline({ focusTimeToday = 0, sessions = [], sessionsToday = 0, isLoading = false }) {
   const timelineItems = useMemo(() => {
-    const today = new Date();
-    const completedSessions = sessions
-      .filter((session) => {
-        if (!session?.startTime || (!session?.endTime && !session?.duration)) {
-          return false;
-        }
+    const completedSessions = filterSessionsByDate(sessions, new Date())
+      .filter((session) => session?.endTime || session?.duration || session?.totalDuration || session?.totalFocusTime)
+      .sort((first, second) => {
+        const firstTimestamp = getSessionCreatedAt(first)?.getTime() ?? 0;
+        const secondTimestamp = getSessionCreatedAt(second)?.getTime() ?? 0;
 
-        const startDate = new Date(session.startTime);
-
-        return (
-          !Number.isNaN(startDate.getTime()) &&
-          startDate.getFullYear() === today.getFullYear() &&
-          startDate.getMonth() === today.getMonth() &&
-          startDate.getDate() === today.getDate()
-        );
+        return firstTimestamp - secondTimestamp;
       })
-      .sort((first, second) => new Date(first.startTime) - new Date(second.startTime))
       .map((session) => ({
-        id: session._id || session.id || `${session.startTime}-${getSessionTaskName(session)}`,
-        time: formatSessionTime(session.startTime),
+        id: session._id || session.id || `${session.createdAt || session.startTime}-${getSessionTaskName(session)}`,
+        time: formatSessionTime(session.createdAt || session.startTime),
         taskName: formatTaskName(getSessionTaskName(session)),
         duration: formatDuration(getSessionDuration(session)),
       }));
