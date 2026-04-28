@@ -394,13 +394,10 @@ function Room() {
         ];
       });
 
-      console.log("Socket connected:", socket.id);
-
       if (!canJoinRoom) {
         return;
       }
 
-      console.log("Joining room:", roomId);
       socket.emit("join-room", { roomId });
       hasJoinedRoomRef.current = true;
 
@@ -447,8 +444,6 @@ function Room() {
     };
 
     const handleUserJoined = (data = {}) => {
-      console.log("User joined room:", data);
-
       const joinedUserId = data.userId;
 
       if (!joinedUserId) {
@@ -510,8 +505,6 @@ function Room() {
     };
 
     const handleUserLeft = (data = {}) => {
-      console.log("User left room:", data);
-
       const leftUserId = data.userId;
 
       if (!leftUserId) {
@@ -531,15 +524,12 @@ function Room() {
       setExecutionOutput(output || "Code ran successfully with no output.");
     };
 
-    const handleRoomDeleted = (data = {}) => {
-      console.log("Room deleted:", data);
+    const handleRoomDeleted = () => {
       redirectToCollaboration("Room was deleted by host");
     };
 
     const handleSocketError = (error) => {
       const message = error?.message || "Something went wrong";
-
-      console.error(error);
 
       if (message === "Room not found") {
         redirectToCollaboration("Room was deleted by host");

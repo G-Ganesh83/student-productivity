@@ -1,12 +1,14 @@
 import api from "./axios";
 
 const TASK_PRIORITIES = new Set(["low", "medium", "high"]);
+const TASK_CATEGORIES = new Set(["study", "coding", "lab", "assignment", "exam"]);
 
 const normalizeTaskPayload = (data = {}) => {
   const payload = {
     title: data.title?.trim() || "",
     description: data.description?.trim() || "",
     priority: data.priority || "medium",
+    category: data.category || "study",
     dueDate: data.dueDate || undefined,
   };
 
@@ -16,6 +18,10 @@ const normalizeTaskPayload = (data = {}) => {
 
   if (!TASK_PRIORITIES.has(payload.priority)) {
     throw new Error("Priority must be low, medium, or high");
+  }
+
+  if (!TASK_CATEGORIES.has(payload.category)) {
+    throw new Error("Category must be study, coding, lab, assignment, or exam");
   }
 
   return payload;
@@ -36,26 +42,16 @@ export const getTasks = async () => {
 
 export const createTask = async (data) => {
   const payload = normalizeTaskPayload(data);
+  const response = await api.post("/api/tasks", payload);
 
-  try {
-    const response = await api.post("/api/tasks", payload);
-    return response.data;
-  } catch (error) {
-    console.log(error.response);
-    throw error;
-  }
+  return response.data;
 };
 
 export const updateTask = async (id, data) => {
   const payload = normalizeTaskPayload(data);
+  const response = await api.put(`/api/tasks/${id}`, payload);
 
-  try {
-    const response = await api.put(`/api/tasks/${id}`, payload);
-    return response.data;
-  } catch (error) {
-    console.log(error.response);
-    throw error;
-  }
+  return response.data;
 };
 
 export const deleteTask = async (id) => {

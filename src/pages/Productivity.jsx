@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Button from "../components/Button";
 import Card from "../components/Card";
@@ -7,6 +8,10 @@ import Modal from "../components/Modal";
 import SearchInput from "../components/SearchInput";
 import Textarea from "../components/Textarea";
 import ToastContainer from "../components/ToastContainer";
+import {
+  endSession as endSessionRequest,
+  startSession as startSessionRequest,
+} from "../api/sessionApi";
 import {
   createTask as createTaskRequest,
   deleteTask as deleteTaskRequest,
@@ -27,17 +32,106 @@ const PRIORITY_CONFIG = {
   low: { label: "Low", className: "bg-emerald-50 text-emerald-600 ring-emerald-100" },
 };
 
-const EMPTY_FORM = { title: "", description: "", priority: "medium", dueDate: "" };
+const CATEGORY_CONFIG = {
+  study: { label: "Study", className: "bg-sky-50 text-sky-700 ring-sky-100" },
+  coding: { label: "Coding", className: "bg-indigo-50 text-indigo-700 ring-indigo-100" },
+  lab: { label: "Lab", className: "bg-cyan-50 text-cyan-700 ring-cyan-100" },
+  assignment: { label: "Assignment", className: "bg-violet-50 text-violet-700 ring-violet-100" },
+  exam: { label: "Exam", className: "bg-rose-50 text-rose-700 ring-rose-100" },
+};
+
+const CATEGORY_OPTIONS = [
+  { value: "study", label: "Study" },
+  { value: "coding", label: "Coding" },
+  { value: "lab", label: "Lab" },
+  { value: "assignment", label: "Assignment" },
+  { value: "exam", label: "Exam" },
+];
+
+const EMPTY_FORM = { title: "", description: "", priority: "medium", category: "study", dueDate: "" };
+const ACTIVE_SESSION_STORAGE_KEY = "student-productivity-active-session";
 const FILTER_TABS = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
   { id: "completed", label: "Completed" },
 ];
 
+const isTaskOverdue = (task) => {
+  if (task.status !== "pending" || !task.dueDate) {
+    return false;
+  }
+
+  const dueDate = new Date(task.dueDate);
+
+  if (Number.isNaN(dueDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  return dueDate < today;
+};
+
+const formatElapsedTime = (totalSeconds) => {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+const getStoredActiveSession = () => {
+  try {
+    const rawSession = window.localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+
+    if (!rawSession) {
+      return null;
+    }
+
+    const parsedSession = JSON.parse(rawSession);
+
+    if (!parsedSession?.sessionId || !parsedSession?.taskId || !parsedSession?.startTime) {
+      window.localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+      return null;
+    }
+
+    return {
+      sessionId: parsedSession.sessionId,
+      taskId: parsedSession.taskId,
+      startTime: parsedSession.startTime,
+      taskName: parsedSession.taskName,
+    };
+  } catch {
+    window.localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+    return null;
+  }
+};
+
+const storeActiveSession = ({ sessionId, startTime, taskId, taskName }) => {
+  window.localStorage.setItem(
+    ACTIVE_SESSION_STORAGE_KEY,
+    JSON.stringify({
+      sessionId,
+      startTime,
+      taskId,
+      taskName,
+    })
+  );
+};
+
+const clearStoredActiveSession = () => {
+  window.localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+};
+
 function Productivity() {
+  const navigate = useNavigate();
   const nextIdRef = useRef(0);
+  const isStartingSessionRef = useRef(false);
+  const isEndingSessionRef = useRef(false);
   const [tasks, setTasks] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sessionModeTask, setSessionModeTask] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
@@ -46,6 +140,10 @@ function Productivity() {
   const [isSavingTask, setIsSavingTask] = useState(false);
   const [isDeletingTaskId, setIsDeletingTaskId] = useState(null);
   const [isTogglingTaskId, setIsTogglingTaskId] = useState(null);
+  const [isStartingSessionTaskId, setIsStartingSessionTaskId] = useState(null);
+  const [isEndingSession, setIsEndingSession] = useState(false);
+  const [activeSession, setActiveSession] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -64,6 +162,12 @@ function Productivity() {
   const removeToast = (id) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
 
   useEffect(() => {
+    const storedSession = getStoredActiveSession();
+
+    if (storedSession) {
+      setActiveSession(storedSession);
+    }
+
     const loadTasks = async () => {
       try {
         setLoading(true);
@@ -71,7 +175,6 @@ function Productivity() {
         const response = await getTasks();
         setTasks(Array.isArray(response?.data) ? response.data : []);
       } catch (requestError) {
-        console.log(requestError.response);
         const message = getTaskApiErrorMessage(requestError, "Unable to load tasks.");
         setError(message);
         const id = getNextId();
@@ -83,6 +186,31 @@ function Productivity() {
 
     loadTasks();
   }, []);
+
+  useEffect(() => {
+    if (!activeSession?.sessionId || !activeSession?.startTime) {
+      setElapsedSeconds(0);
+      return undefined;
+    }
+
+    const startTimestamp = new Date(activeSession.startTime).getTime();
+
+    if (Number.isNaN(startTimestamp)) {
+      setElapsedSeconds(0);
+      return undefined;
+    }
+
+    const updateElapsedTime = () => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startTimestamp) / 1000)));
+    };
+
+    updateElapsedTime();
+    const intervalId = window.setInterval(updateElapsedTime, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [activeSession]);
 
   const filteredTasks = useMemo(
     () =>
@@ -119,6 +247,7 @@ function Productivity() {
             title: task.title,
             description: task.description || "",
             priority: task.priority,
+            category: task.category || "study",
             dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
           }
         : EMPTY_FORM
@@ -132,6 +261,21 @@ function Productivity() {
     setEditingTask(null);
     setFormData(EMPTY_FORM);
     setFormErrors({});
+  };
+
+  const openSessionModeModal = (task) => {
+    if (activeSession) {
+      addToast("Finish current session first", "error");
+      return;
+    }
+
+    setSessionModeTask(task);
+  };
+
+  const closeSessionModeModal = () => {
+    if (!isStartingSessionTaskId) {
+      setSessionModeTask(null);
+    }
   };
 
   const saveTask = async () => {
@@ -148,6 +292,7 @@ function Productivity() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         priority: formData.priority,
+        category: formData.category,
         dueDate: formData.dueDate || undefined,
       };
 
@@ -173,7 +318,6 @@ function Productivity() {
 
       closeModal();
     } catch (requestError) {
-      console.log(requestError.response);
       const message = getTaskApiErrorMessage(requestError, "Unable to save task.");
       setError(message);
       addToast(message, "error");
@@ -194,7 +338,6 @@ function Productivity() {
       setTasks((prev) => prev.filter((task) => task._id !== id));
       addToast("Task deleted", "success");
     } catch (requestError) {
-      console.log(requestError.response);
       const message = getTaskApiErrorMessage(requestError, "Unable to delete task.");
       setError(message);
       addToast(message, "error");
@@ -215,7 +358,6 @@ function Productivity() {
         addToast("Status updated", "success");
       }
     } catch (requestError) {
-      console.log(requestError.response);
       const message = getTaskApiErrorMessage(requestError, "Unable to update task status.");
       setError(message);
       addToast(message, "error");
@@ -224,10 +366,104 @@ function Productivity() {
     }
   };
 
+  const handleStartSession = async (mode) => {
+    if (!sessionModeTask || activeSession || isStartingSessionRef.current) {
+      return;
+    }
+
+    try {
+      isStartingSessionRef.current = true;
+      setIsStartingSessionTaskId(sessionModeTask._id);
+      setError("");
+
+      const response = await startSessionRequest(sessionModeTask._id);
+      const session = response?.data;
+
+      if (!session?._id) {
+        throw new Error("Unable to start session.");
+      }
+
+      const startTime = session.startTime || new Date().toISOString();
+      const nextActiveSession = {
+        sessionId: session._id,
+        taskId: sessionModeTask._id,
+        startTime,
+        taskName: sessionModeTask.title,
+      };
+
+      setActiveSession(nextActiveSession);
+      storeActiveSession(nextActiveSession);
+      addToast("Session started", "success");
+      setSessionModeTask(null);
+
+      if (mode === "focus") {
+        navigate("/focus", {
+          state: {
+            activeSession: nextActiveSession,
+          },
+        });
+      }
+    } catch (requestError) {
+      const message = getTaskApiErrorMessage(requestError, "Unable to start session.");
+      setError(message);
+      addToast(message, "error");
+    } finally {
+      isStartingSessionRef.current = false;
+      setIsStartingSessionTaskId(null);
+    }
+  };
+
+  const handleEndSession = async () => {
+    if (!activeSession?.sessionId || isEndingSessionRef.current) {
+      return;
+    }
+
+    const sessionToEnd = activeSession;
+
+    try {
+      isEndingSessionRef.current = true;
+      setIsEndingSession(true);
+      setError("");
+
+      await endSessionRequest(sessionToEnd.sessionId);
+      setActiveSession(null);
+      setElapsedSeconds(0);
+      clearStoredActiveSession();
+      addToast("Session ended", "success");
+    } catch (requestError) {
+      const message = getTaskApiErrorMessage(requestError, "Unable to end session.");
+      setError(message);
+      addToast(message, "error");
+    } finally {
+      isEndingSessionRef.current = false;
+      setIsEndingSession(false);
+    }
+  };
+
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setPriorityFilter("all");
+  };
+
+  const openFocusMode = (task) => {
+    if (!activeSession?.sessionId || !activeSession?.startTime) {
+      return;
+    }
+
+    const currentActiveSession = {
+      ...activeSession,
+      taskId: activeSession.taskId || task._id,
+      taskName: activeSession.taskName || task.title,
+    };
+
+    storeActiveSession(currentActiveSession);
+    setActiveSession(currentActiveSession);
+    navigate("/focus", {
+      state: {
+        activeSession: currentActiveSession,
+      },
+    });
   };
 
   const hasFilters = searchQuery || statusFilter !== "all" || priorityFilter !== "all";
@@ -345,10 +581,10 @@ function Productivity() {
       ) : !loading && total === 0 ? (
         <div className="rounded-3xl border border-slate-200/80 bg-white px-6 py-12 text-center shadow-card">
           <p className="font-ui text-base font-semibold text-slate-900">
-            No tasks yet. Start by creating your first task.
+            No activity yet. Start your first session to track productivity.
           </p>
           <p className="mt-2 text-sm text-slate-600">
-            Add your first task to build momentum and keep your day on track.
+            Create your first task, then start a session to build your focus history.
           </p>
           <div className="mt-6">
             <Button onClick={() => openModal()} size="md">
@@ -372,15 +608,27 @@ function Productivity() {
           {filteredTasks.map((task) => {
             const statusConfig = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending;
             const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
+            const categoryConfig = CATEGORY_CONFIG[task.category] || CATEGORY_CONFIG.study;
             const isDone = task.status === "completed";
+            const isOverdue = isTaskOverdue(task);
+            const isActiveSessionTask = activeSession?.taskId === task._id;
+            const hasOtherActiveSession = Boolean(activeSession) && !isActiveSessionTask;
+            const isStartingSession = isStartingSessionTaskId === task._id;
             const isBusy =
-              isSavingTask || isDeletingTaskId === task._id || isTogglingTaskId === task._id;
+              isSavingTask ||
+              isDeletingTaskId === task._id ||
+              isTogglingTaskId === task._id ||
+              isStartingSession;
 
             return (
               <div
                 key={task._id}
                 onClick={() => !isBusy && openModal(task)}
-                className="cursor-pointer rounded-3xl border border-slate-200/80 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-[1px] hover:bg-slate-50/80 hover:shadow-card-hover"
+                className={`cursor-pointer rounded-3xl border p-5 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg sm:p-6 ${
+                  isActiveSessionTask
+                    ? "scale-[1.01] border-sky-300 bg-gradient-to-r from-sky-50 via-white to-sky-50 shadow-[0_22px_55px_-30px_rgba(14,165,233,0.75)] ring-1 ring-sky-200/80"
+                    : "border-slate-200/80 bg-white hover:bg-slate-50/80"
+                }`}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(event) => {
@@ -390,7 +638,7 @@ function Productivity() {
                   }
                 }}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-5">
                   <button
                     type="button"
                     onClick={(event) => {
@@ -411,26 +659,34 @@ function Productivity() {
                   </button>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                      <div className="min-w-0 flex-1 space-y-3.5">
+                        <div className="flex items-start gap-2">
                           <span className={`h-2.5 w-2.5 rounded-full ${statusConfig.dot}`} aria-hidden="true" />
                           <p
-                            className={`text-sm font-semibold transition duration-200 ${
+                            className={`min-w-0 text-base font-medium leading-6 transition-all duration-200 ${
                               isDone ? "text-slate-400 line-through" : "text-slate-900"
                             }`}
                           >
                             {task.title}
                           </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`font-ui inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${priorityConfig.className}`}
+                            className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${categoryConfig.className}`}
+                          >
+                            {categoryConfig.label}
+                          </span>
+                          <span
+                            className={`font-ui inline-flex rounded-full px-3 py-1 text-[10px] font-semibold ring-1 ${priorityConfig.className}`}
                           >
                             {priorityConfig.label}
                           </span>
                         </div>
                         {task.description ? (
                           <p
-                            className={`mt-1.5 text-sm ${
+                            className={`text-sm leading-6 ${
                               isDone ? "text-slate-400" : "text-slate-600"
                             }`}
                           >
@@ -439,13 +695,60 @@ function Productivity() {
                         ) : null}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`font-ui inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusConfig.text}`}
-                        >
-                          <span className={`h-2 w-2 rounded-full ${statusConfig.dot}`} />
-                          {statusConfig.label}
-                        </span>
+                      <div className="flex shrink-0 flex-wrap items-center gap-4 lg:justify-end">
+                        {isActiveSessionTask ? (
+                          <div className="min-w-[120px] text-left text-sky-700 transition-all duration-200 lg:text-center">
+                            <p className="text-[11px] font-medium leading-none text-slate-500">
+                              Running
+                            </p>
+                            <p className="mt-1 text-[11px] font-medium leading-none text-slate-500">
+                              Focus Time
+                            </p>
+                            <p className="mt-2 font-ui text-3xl font-bold leading-none text-sky-950 pulse-dot transition-all duration-200">
+                              {formatElapsedTime(elapsedSeconds)}
+                            </p>
+                          </div>
+                        ) : null}
+                        {isActiveSessionTask ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openFocusMode(task);
+                              }}
+                              className="font-ui inline-flex h-10 items-center rounded-full bg-sky-600 px-5 text-xs font-semibold text-white shadow-sm shadow-sky-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-sky-700 hover:shadow-md"
+                            >
+                              Focus Mode
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleEndSession();
+                              }}
+                              disabled={isEndingSession}
+                              className="font-ui inline-flex h-10 items-center rounded-full bg-red-500 px-5 text-xs font-semibold text-white shadow-sm shadow-red-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-red-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isEndingSession ? "Stopping..." : "Stop Session"}
+                            </button>
+                          </>
+                        ) : null}
+
+                        {!isDone && !isActiveSessionTask ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openSessionModeModal(task);
+                            }}
+                            disabled={isBusy || hasOtherActiveSession}
+                            title={hasOtherActiveSession ? "Finish current session first" : undefined}
+                            className="font-ui inline-flex h-10 items-center rounded-full bg-sky-600 px-5 text-xs font-semibold text-white shadow-sm shadow-sky-200/80 transition-all duration-200 hover:scale-[1.02] hover:bg-sky-700 hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-sm"
+                          >
+                            {isStartingSession ? "Starting..." : "Start Session"}
+                          </button>
+                        ) : null}
 
                         <button
                           type="button"
@@ -465,7 +768,11 @@ function Productivity() {
                     </div>
 
                     {task.dueDate ? (
-                      <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                      <div
+                        className={`mt-3 flex items-center gap-1.5 text-xs font-medium ${
+                          isOverdue ? "text-red-600" : "text-slate-500"
+                        }`}
+                      >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -507,7 +814,7 @@ function Productivity() {
             placeholder="Add more details (optional)"
             rows={3}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">Priority</label>
               <select
@@ -518,6 +825,20 @@ function Productivity() {
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-700">Category</label>
+              <select
+                value={formData.category}
+                onChange={(event) => setFormData({ ...formData, category: event.target.value })}
+                className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-300 focus:outline-none input-focus-ring"
+              >
+                {CATEGORY_OPTIONS.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
               </select>
             </div>
             <Input
@@ -533,6 +854,55 @@ function Productivity() {
             </Button>
             <Button onClick={saveTask} disabled={isSavingTask || !formData.title.trim()}>
               {isSavingTask ? "Saving..." : editingTask ? "Update Task" : "Create Task"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(sessionModeTask)}
+        onClose={closeSessionModeModal}
+        title="Start Session"
+        description={sessionModeTask ? `Choose how you want to work on "${sessionModeTask.title}".` : ""}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => handleStartSession("focus")}
+            disabled={Boolean(isStartingSessionTaskId)}
+            className="group w-full rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4 text-left transition duration-200 hover:border-sky-200 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <span className="block text-sm font-semibold text-slate-900">
+              {isStartingSessionTaskId ? "Starting..." : "Focus Mode"}
+            </span>
+            <span className="mt-1 block text-sm text-slate-600">
+              Open a clean full-screen timer for deep work.
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleStartSession("normal")}
+            disabled={Boolean(isStartingSessionTaskId)}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left transition duration-200 hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <span className="block text-sm font-semibold text-slate-900">
+              {isStartingSessionTaskId ? "Starting..." : "Normal Mode"}
+            </span>
+            <span className="mt-1 block text-sm text-slate-600">
+              Stay on this page and track time quietly.
+            </span>
+          </button>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={closeSessionModeModal}
+              disabled={Boolean(isStartingSessionTaskId)}
+            >
+              Cancel
             </Button>
           </div>
         </div>

@@ -8,18 +8,6 @@ export const socket = io("http://localhost:8000", {
 
 let activeSocketToken = null;
 
-socket.on("connect", () => {
-  console.log("Socket connected:", socket.id);
-});
-
-socket.on("disconnect", () => {
-  console.log("Socket disconnected");
-});
-
-socket.on("connect_error", (error) => {
-  console.error("Socket connection failed:", error.message);
-});
-
 export const connectSocket = (token) => {
   const nextToken = token || getStoredToken();
 

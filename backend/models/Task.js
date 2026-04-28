@@ -23,6 +23,11 @@ const taskSchema = new mongoose.Schema(
       enum: ['low', 'medium', 'high'],
       default: 'medium',
     },
+    category: {
+      type: String,
+      enum: ['study', 'coding', 'lab', 'assignment', 'exam'],
+      default: 'study',
+    },
     dueDate: {
       type: Date,
     },
@@ -30,6 +35,14 @@ const taskSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'completed'],
       default: 'pending',
+    },
+    completedAt: {
+      type: Date,
+    },
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Room',
+      required: false,
     },
   },
   {

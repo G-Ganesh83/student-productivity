@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Focus from "./pages/Focus";
 import Productivity from "./pages/Productivity";
 import Collaboration from "./pages/Collaboration";
 import Room from "./pages/Room";
@@ -47,6 +48,16 @@ function App() {
           element={
             <ProtectedRoute>
               <Room />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Focus Mode Route (without AppLayout sidebar) */}
+        <Route
+          path="/focus"
+          element={
+            <ProtectedRoute>
+              <Focus />
             </ProtectedRoute>
           }
         />

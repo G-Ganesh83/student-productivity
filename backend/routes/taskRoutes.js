@@ -4,6 +4,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import {
   createTask,
   deleteTask,
+  getTaskStats,
   getTasks,
   toggleTaskStatus,
   updateTask,
@@ -15,6 +16,7 @@ router.use(authMiddleware);
 
 router.post('/', createTask);
 router.get('/', getTasks);
+router.get('/stats', getTaskStats);
 router.put('/:id', updateTask);
 router.delete('/:id', deleteTask);
 router.patch('/:id/status', toggleTaskStatus);

@@ -23,6 +23,15 @@ const normalizeRooms = (payload) => (Array.isArray(payload) ? payload : []);
 
 const isBrowser = typeof window !== "undefined";
 
+const DEFAULT_PRODUCTIVITY_STATS = {
+  total: 0,
+  completed: 0,
+  pending: 0,
+  overdue: 0,
+  completionRate: 0,
+  streak: 0,
+};
+
 const buildTaskStats = (tasks) => {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((task) => task.status === "completed").length;
@@ -35,6 +44,48 @@ const buildTaskStats = (tasks) => {
   };
 };
 
+const buildProductivityStats = (tasks) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const completed = tasks.filter((task) => task.status === "completed").length;
+  const pending = tasks.filter((task) => task.status === "pending").length;
+  const overdue = tasks.filter((task) => {
+    if (task.status !== "pending" || !task.dueDate) {
+      return false;
+    }
+
+    const dueDate = new Date(task.dueDate);
+    return !Number.isNaN(dueDate.getTime()) && dueDate < today;
+  }).length;
+  const total = completed + pending;
+
+  return {
+    ...DEFAULT_PRODUCTIVITY_STATS,
+    total,
+    completed,
+    pending,
+    overdue,
+    completionRate: total ? Number(((completed / total) * 100).toFixed(2)) : 0,
+  };
+};
+
+const normalizeProductivityStats = (payload, fallbackTasks = []) => {
+  if (!payload || typeof payload !== "object") {
+    return buildProductivityStats(fallbackTasks);
+  }
+
+  return {
+    ...DEFAULT_PRODUCTIVITY_STATS,
+    total: Number(payload.total) || 0,
+    completed: Number(payload.completed) || 0,
+    pending: Number(payload.pending) || 0,
+    overdue: Number(payload.overdue) || 0,
+    completionRate: Number(payload.completionRate) || 0,
+    streak: Number(payload.streak) || 0,
+  };
+};
+
 const sanitizeDashboardData = (payload = {}) => {
   const tasks = normalizeTasks(payload.tasks);
   const rooms = normalizeRooms(payload.rooms);
@@ -43,6 +94,7 @@ const sanitizeDashboardData = (payload = {}) => {
     tasks,
     rooms,
     stats: buildTaskStats(tasks),
+    productivityStats: normalizeProductivityStats(payload.productivityStats, tasks),
   };
 };
 
@@ -92,17 +144,31 @@ const setCachedDashboardData = (data) => {
 
 export const getDashboardData = async () => {
   const requestConfig = buildAuthConfig();
-  const [tasksResponse, roomsResponse] = await Promise.all([
+  const [tasksResult, roomsResult, taskStatsResult] = await Promise.allSettled([
     api.get("/api/tasks", requestConfig),
     api.get("/api/rooms", requestConfig),
+    api.get("/api/tasks/stats", requestConfig),
   ]);
 
-  const tasks = normalizeTasks(tasksResponse?.data?.data);
-  const rooms = normalizeRooms(roomsResponse?.data?.data);
+  if (tasksResult.status === "rejected") {
+    throw tasksResult.reason;
+  }
+
+  if (roomsResult.status === "rejected") {
+    throw roomsResult.reason;
+  }
+
+  const tasks = normalizeTasks(tasksResult.value?.data?.data);
+  const rooms = normalizeRooms(roomsResult.value?.data?.data);
+  const productivityStats =
+    taskStatsResult.status === "fulfilled"
+      ? normalizeProductivityStats(taskStatsResult.value?.data?.data, tasks)
+      : buildProductivityStats(tasks);
   const dashboardData = {
     tasks,
     rooms,
     stats: buildTaskStats(tasks),
+    productivityStats,
   };
 
   setCachedDashboardData(dashboardData);

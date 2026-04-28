@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
+import ProductivityAnalytics from "../components/ProductivityAnalytics";
 import StatCard from "../components/StatCard";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -8,6 +9,7 @@ import {
   getDashboardData,
   getDashboardErrorMessage,
 } from "../services/dashboardService";
+import { normalizeStreak } from "../utils/sessionAnalytics";
 
 const QUICK_ACTIONS = [
   {
@@ -52,6 +54,22 @@ const QUICK_ACTIONS = [
   },
 ];
 
+const FlameIcon = () => (
+  <svg
+    className="h-9 w-9 drop-shadow-[0_0_12px_rgba(249,115,22,0.55)] sm:h-10 sm:w-10"
+    fill="none"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path
+      d="M12.4 3.25c.25 2.2-.62 3.75-1.8 5.18-1.28 1.55-2.8 3.05-2.8 5.5A4.2 4.2 0 0012 18.1a4.2 4.2 0 004.2-4.17c0-1.8-.85-3.2-2.05-4.57-.48 1.05-1.22 1.83-2.15 2.34.45-1.67.05-3.26-1.05-4.82.6-.78 1.06-1.9 1.45-3.63z"
+      className="fill-orange-500 stroke-orange-600"
+      strokeWidth="1.2"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const getEntityId = (value) => {
   if (!value) {
     return "";
@@ -88,7 +106,16 @@ function Dashboard() {
     completedTasks: 0,
     pendingTasks: 0,
   });
+  const [productivityStats, setProductivityStats] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    overdue: 0,
+    completionRate: 0,
+    streak: 0,
+  });
   const [status, setStatus] = useState("loading");
+  const [sessionStreak, setSessionStreak] = useState(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [error, setError] = useState("");
   const isLoading = status === "loading";
@@ -99,6 +126,11 @@ function Dashboard() {
     setTasks(dashboardData.tasks);
     setRooms(dashboardData.rooms);
     setTaskStats(dashboardData.stats);
+    setProductivityStats(dashboardData.productivityStats);
+  }, []);
+
+  const handleDailySummaryChange = useCallback((summary) => {
+    setSessionStreak(normalizeStreak(summary?.currentStreak));
   }, []);
 
   const loadDashboard = useCallback(async ({ silent = false } = {}) => {
@@ -114,8 +146,6 @@ function Dashboard() {
       applyDashboardData(dashboardData);
       setStatus("success");
     } catch (requestError) {
-      console.error(requestError);
-
       if (requestError?.response?.status === 401) {
         logout();
         navigate("/login", { replace: true });
@@ -203,6 +233,12 @@ function Dashboard() {
       },
     ];
   }, [taskStats]);
+
+  const displayedStreak = sessionStreak ?? 0;
+  const displayedStreakText =
+    sessionStreak === null
+      ? "Loading..."
+      : `${displayedStreak} ${displayedStreak === 1 ? "day" : "days"}`;
 
   const recentActivity = useMemo(() => {
     const currentUserId = getEntityId(user);
@@ -301,6 +337,113 @@ function Dashboard() {
         ))}
       </section>
 
+      <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-card">
+        {showStatSkeleton ? (
+          <div className="space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
+                <div className="h-8 w-44 animate-pulse rounded bg-slate-100" />
+              </div>
+              <div className="h-16 w-16 animate-pulse rounded-full bg-slate-100" />
+            </div>
+            <div className="h-3 animate-pulse rounded-full bg-slate-100" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-3 xl:grid-cols-[minmax(320px,1.15fr)_minmax(360px,0.85fr)] xl:items-stretch">
+              <div className="relative overflow-hidden rounded-[26px] border border-orange-200/70 bg-[linear-gradient(135deg,rgba(255,247,237,0.98)_0%,rgba(255,251,235,0.96)_48%,rgba(255,255,255,0.98)_100%)] px-5 py-4 shadow-[0_18px_40px_-32px_rgba(251,146,60,0.42)]">
+                <div
+                  className="pointer-events-none absolute -left-10 top-6 h-24 w-24 rounded-full bg-orange-200/35 blur-2xl"
+                  aria-hidden="true"
+                />
+                <div
+                  className="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-amber-100/60 blur-3xl"
+                  aria-hidden="true"
+                />
+                <div className="relative flex h-full flex-col gap-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-ui text-xs font-bold uppercase tracking-wide text-slate-500 sm:text-sm">
+                        Productivity
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-orange-200 bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-orange-700 shadow-sm sm:text-[11px]">
+                      Consistency
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4 sm:gap-5">
+                    <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-orange-200/80 bg-white/75 shadow-[0_0_0_8px_rgba(255,237,213,0.5),0_14px_28px_-22px_rgba(249,115,22,0.58)] sm:h-[5.5rem] sm:w-[5.5rem]">
+                      <div
+                        className="absolute inset-2 rounded-full bg-[radial-gradient(circle,rgba(254,215,170,0.78)_0%,rgba(255,237,213,0.16)_72%,transparent_100%)]"
+                        aria-hidden="true"
+                      />
+                      <div
+                        className="absolute inset-0 rounded-full shadow-[0_0_28px_rgba(251,146,60,0.32)]"
+                        aria-hidden="true"
+                      />
+                      <div className="relative">
+                        <FlameIcon />
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 self-center">
+                      <p className="font-display text-[3.1rem] font-semibold leading-none text-slate-900 sm:text-[3.2rem]">
+                        {displayedStreakText}
+                      </p>
+                      <p className="mt-1.5 font-ui text-xs font-semibold uppercase tracking-wide text-orange-700 sm:text-sm">
+                        Current streak
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-emerald-100/90 bg-[linear-gradient(180deg,rgba(236,253,245,0.96)_0%,rgba(255,255,255,0.98)_100%)] px-4 py-3.5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Completed</p>
+                  <p className="mt-2 text-[2rem] font-semibold leading-none text-emerald-950">{productivityStats.completed}</p>
+                  <p className="mt-2.5 text-xs leading-5 text-emerald-800/80">Tasks already pushed across the line.</p>
+                </div>
+                <div className="rounded-2xl border border-amber-100/90 bg-[linear-gradient(180deg,rgba(255,251,235,0.98)_0%,rgba(255,255,255,0.98)_100%)] px-4 py-3.5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Pending</p>
+                  <p className="mt-2 text-[2rem] font-semibold leading-none text-amber-950">{productivityStats.pending}</p>
+                  <p className="mt-2.5 text-xs leading-5 text-amber-900/75">Active items waiting for your next pass.</p>
+                </div>
+                <div className="rounded-2xl border border-rose-100/90 bg-[linear-gradient(180deg,rgba(255,241,242,0.98)_0%,rgba(255,255,255,0.98)_100%)] px-4 py-3.5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-rose-700">Overdue</p>
+                  <p className="mt-2 text-[2rem] font-semibold leading-none text-rose-950">{productivityStats.overdue}</p>
+                  <p className="mt-2.5 text-xs leading-5 text-rose-900/75">Needs attention before it slips further.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-100 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,1)_100%)] px-4 py-3.5">
+              <div className="mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Completion percentage</p>
+                  <p className="mt-1 text-xs text-slate-500">A quick read on how much of your workload is closed out.</p>
+                </div>
+                <p className="text-sm font-semibold text-slate-900">
+                  {Math.round(productivityStats.completionRate)}%
+                </p>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#fb923c_0%,#f59e0b_48%,#ef4444_100%)] transition-all duration-500"
+                  style={{
+                    width: `${Math.min(Math.max(productivityStats.completionRate, 0), 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <ProductivityAnalytics onDailySummaryChange={handleDailySummaryChange} />
+
       <section className="space-y-4">
         <div>
           <h2 className="font-display text-3xl font-semibold leading-none tracking-tight text-slate-900">
@@ -368,7 +511,7 @@ function Dashboard() {
             <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-5 py-6">
               <p className="font-ui text-sm font-semibold text-slate-900">No activity yet</p>
               <p className="mt-2 max-w-md text-sm text-slate-600">
-                Create your first task or open a collaboration room to start building momentum.
+                Start your first session to track productivity.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Link

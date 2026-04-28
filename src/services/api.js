@@ -43,7 +43,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    console.log("Request:", config);
     return config;
   },
   (error) => Promise.reject(error)
@@ -52,8 +51,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log("Error:", error.response || error.message);
-
     const status = error?.response?.status;
     const message = error?.response?.data?.message?.toLowerCase?.() || "";
 
