@@ -75,7 +75,7 @@ function AppLayout() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,#f8fbfe_100%)]">
+    <div className="workspace-scale flex min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,#f8fbfe_100%)]">
       {/* ─── Desktop Sidebar ─────────────────── */}
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[284px] flex-col border-r border-slate-200/80 bg-[#F8FAFC] shadow-sidebar z-30">
         

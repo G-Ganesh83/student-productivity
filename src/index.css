@@ -47,6 +47,26 @@
 }
 
 @layer utilities {
+  .workspace-scale {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  @media (min-width: 1024px) {
+    .workspace-scale {
+      zoom: 0.9;
+    }
+
+    @supports not (zoom: 1) {
+      .workspace-scale {
+        width: calc(100% / 0.9);
+        min-height: calc(100vh / 0.9);
+        transform: scale(0.9);
+        transform-origin: top left;
+      }
+    }
+  }
+
   .glass {
     background: rgba(248, 250, 252, 0.9);
     backdrop-filter: blur(16px);

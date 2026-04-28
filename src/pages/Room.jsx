@@ -867,7 +867,7 @@ function Room() {
   const isPageLoading = loading || isRoomLoading || !isRoomValid;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-slate-100">
+    <div className="workspace-scale fixed inset-0 flex flex-col overflow-hidden bg-slate-100">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <Modal
         isOpen={isLeaveDialogOpen}
