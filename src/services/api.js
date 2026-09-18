@@ -21,8 +21,11 @@ const handleAuthFailure = () => {
 
 const getAuthToken = () => authToken || getStoredToken();
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 export const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

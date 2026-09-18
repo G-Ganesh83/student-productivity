@@ -6,7 +6,7 @@ import Input from "../components/Input";
 import Badge from "../components/Badge";
 import ToastContainer from "../components/ToastContainer";
 import SearchInput from "../components/SearchInput";
-import { dummyResources } from "../data/dummyData";
+import { fetchResources, createResource as apiCreateResource, deleteResource as apiDeleteResource } from "../api/resourceApi";
 
 const TYPE_CONFIG = {
   pdf: {
@@ -39,22 +39,32 @@ const EMPTY_FORM = { title: "", type: "link", url: "", tags: "" };
 
 function Resources() {
   const nextIdRef = useRef(0);
-  const [resources, setResources] = useState(() => {
-    // TODO: Replace with backend API
-    const saved = localStorage.getItem("resources");
-    return saved ? JSON.parse(saved) : dummyResources;
-  });
+  const [resources, setResources] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [toasts, setToasts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
+  // Load resources from backend on mount
   useEffect(() => {
-    // TODO: Replace with backend API
-    localStorage.setItem("resources", JSON.stringify(resources));
-  }, [resources]);
+    let cancelled = false;
+    setIsFetching(true);
+    fetchResources()
+      .then((data) => {
+        if (!cancelled) setResources(data || []);
+      })
+      .catch(() => {
+        if (!cancelled) addToast("Failed to load resources", "error");
+      })
+      .finally(() => {
+        if (!cancelled) setIsFetching(false);
+      });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getNextId = () => {
     nextIdRef.current += 1;
@@ -95,7 +105,7 @@ function Resources() {
     return url.trim().length > 0;
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     const errs = {};
     if (!form.title.trim()) errs.title = "Title is required";
     if (!form.url.trim()) errs.url = form.type === "link" ? "URL is required" : "File name is required";
@@ -104,26 +114,32 @@ function Resources() {
     if (Object.keys(errs).length) return addToast("Please fix form errors", "error");
 
     setIsLoading(true);
-    setTimeout(() => {
-      const newRes = {
-        id: `resource-${getNextId()}`,
-        title: form.title,
+    try {
+      const newRes = await apiCreateResource({
+        title: form.title.trim(),
         type: form.type,
-        url: form.url,
+        url: form.url.trim(),
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-        uploadedAt: new Date().toISOString().split("T")[0],
-      };
+      });
       setResources((p) => [newRes, ...p]);
-      setIsLoading(false);
       closeModal();
       addToast("Resource added!", "success");
-    }, 300);
+    } catch {
+      addToast("Failed to save resource. Please try again.", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm("Delete this resource?")) return;
-    setResources((p) => p.filter((r) => r.id !== id));
-    addToast("Resource deleted", "success");
+    try {
+      await apiDeleteResource(id);
+      setResources((p) => p.filter((r) => r._id !== id && r.id !== id));
+      addToast("Resource deleted", "success");
+    } catch {
+      addToast("Failed to delete resource", "error");
+    }
   };
 
   return (
@@ -181,8 +197,30 @@ function Resources() {
         </div>
       </Card>
 
-      {/* ─── Empty States ────────────────────── */}
-      {resources.length === 0 ? (
+      {/* ─── Loading Skeleton ─────────────────── */}
+      {isFetching ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {[1, 2, 3].map((n) => (
+            <Card key={n} variant="default" padding="none" className="overflow-hidden">
+              <div className="h-0.5 w-full bg-slate-100 animate-pulse" />
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-slate-200 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 rounded bg-slate-200 animate-pulse" />
+                    <div className="h-3 w-1/4 rounded bg-slate-100 animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-3 w-full rounded bg-slate-100 animate-pulse" />
+                <div className="flex gap-1.5">
+                  <div className="h-5 w-12 rounded-full bg-slate-100 animate-pulse" />
+                  <div className="h-5 w-16 rounded-full bg-slate-100 animate-pulse" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : resources.length === 0 ? (
         <Card variant="default" padding="lg">
           <div className="text-center py-8">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl gradient-brand text-white shadow-button">
@@ -219,7 +257,7 @@ function Resources() {
           {filtered.map((resource) => {
             const cfg = TYPE_CONFIG[resource.type] || TYPE_CONFIG.link;
             return (
-              <Card key={resource.id} variant="default" padding="none" className="group overflow-hidden transition-all duration-200 ease-out hover:-translate-y-[2px] hover:shadow-card-hover">
+              <Card key={resource._id || resource.id} variant="default" padding="none" className="group overflow-hidden transition-all duration-200 ease-out hover:-translate-y-[2px] hover:shadow-card-hover">
                 {/* Type accent bar */}
                 <div className={`h-0.5 w-full bg-gradient-to-r ${cfg.gradient}`} />
 
@@ -275,7 +313,7 @@ function Resources() {
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      {new Date(resource.uploadedAt).toLocaleDateString()}
+                      {new Date(resource.createdAt || resource.uploadedAt).toLocaleDateString()}
                     </div>
                     <div className="flex gap-2">
                       {resource.type === "link" && (
@@ -286,7 +324,7 @@ function Resources() {
                         </a>
                       )}
                       <button
-                        onClick={() => handleDelete(resource.id)}
+                        onClick={() => handleDelete(resource._id || resource.id)}
                         className="rounded-xl p-1.5 text-slate-400 transition-all hover:bg-red-50 hover:text-red-600"
                         title="Delete"
                       >

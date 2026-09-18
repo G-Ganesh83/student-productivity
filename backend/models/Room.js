@@ -1,5 +1,26 @@
 import mongoose from 'mongoose';
 
+const messageSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 2000,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: true }
+);
+
 const roomSchema = new mongoose.Schema(
   {
     name: {
@@ -32,11 +53,17 @@ const roomSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    // Stores the last 50 chat messages for late-joining participants
+    messages: {
+      type: [messageSchema],
+      default: [],
+    },
   },
   {
     timestamps: true,
   }
 );
+
 
 roomSchema.pre('validate', function syncCreatorFields() {
   if (!this.creator && this.createdBy) {

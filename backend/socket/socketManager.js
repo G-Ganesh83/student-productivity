@@ -100,6 +100,22 @@ const initializeSocketManager = (io) => {
         socket.join(roomId);
         console.log(`[JOIN] user ${socket.user.id} -> room ${roomId}`);
 
+        // Send persisted chat history to the joining user
+        const room = await Room.findById(roomId).select('messages').populate({
+          path: 'messages.userId',
+          select: 'name',
+          model: 'User',
+        });
+
+        if (room?.messages?.length) {
+          socket.emit('chat-history', room.messages.map((m) => ({
+            userId: m.userId?._id?.toString() || m.userId?.toString(),
+            userName: m.userId?.name,
+            message: m.message,
+            timestamp: m.timestamp,
+          })));
+        }
+
         io.to(roomId).emit('user-joined', {
           userId: socket.user.id,
           roomId,
@@ -155,12 +171,26 @@ const initializeSocketManager = (io) => {
           return;
         }
 
+        const timestamp = new Date();
         console.log(`[MSG] ${socket.user.id} in ${roomId}`);
+
+        // Persist message and trim to last 50
+        await Room.updateOne(
+          { _id: roomId },
+          {
+            $push: {
+              messages: {
+                $each: [{ userId: socket.user._id, message: message.trim(), timestamp }],
+                $slice: -50,
+              },
+            },
+          }
+        );
 
         io.to(roomId).emit('receive-message', {
           userId: socket.user.id,
           message: message.trim(),
-          timestamp: new Date().toISOString(),
+          timestamp: timestamp.toISOString(),
         });
       } catch (error) {
         console.error('Socket Error:', error.message);

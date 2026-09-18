@@ -4,10 +4,11 @@ import Button from "../components/Button";
 import Badge from "../components/Badge";
 import Modal from "../components/Modal";
 import ToastContainer from "../components/ToastContainer";
+import NetworkStatus from "../components/NetworkStatus";
 import { useAuth } from "../context/AuthContext";
 import { getCodeExecutionError, runCode as runCodeApi } from "../api/codeApi";
 import { getApiErrorMessage, getRoomDetails, leaveRoom } from "../api/roomApi";
-import { connectSocket, getSocket } from "../socket/socket";
+import { connectSocket, getSocket, getSocketStatus, subscribeSocketStatus } from "../socket/socket";
 import { decodeTokenPayload } from "../utils/auth";
 
 const USER_COLOR_CLASSES = [
@@ -82,6 +83,10 @@ function Room() {
   const [isRoomLoading, setIsRoomLoading] = useState(true);
   const [isRoomValid, setIsRoomValid] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [socketStatus, setSocketStatus] = useState(getSocketStatus);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
   const [toasts, setToasts] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -355,6 +360,29 @@ function Room() {
   }, [token]);
 
   useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    const unsubscribe = subscribeSocketStatus((nextStatus) => {
+      setSocketStatus(nextStatus);
+      if (nextStatus === "reconnecting") {
+        setIsReconnecting(true);
+      } else if (nextStatus === "connected") {
+        setIsReconnecting(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
     connectSocket(token);
     const socket = getSocket();
 
@@ -419,6 +447,19 @@ function Room() {
           time: normalizeTime(message.timestamp),
         },
       ]);
+    };
+
+    const handleChatHistory = (history) => {
+      if (!Array.isArray(history) || history.length === 0) return;
+      setMessages(
+        history.map((m) => ({
+          id: `${m.userId}-${m.timestamp}`,
+          userId: m.userId,
+          userName: m.userName,
+          message: m.message,
+          time: normalizeTime(m.timestamp),
+        }))
+      );
     };
 
     const handleReceiveCode = (incomingCode) => {
@@ -549,18 +590,17 @@ function Room() {
       const message = error?.message || "Unable to connect to the collaboration server.";
 
       setLoading(false);
-      setIsReconnecting(false);
-      addToast(
-        message === "Token expired" || message === "Invalid token"
-          ? "Session expired. Please sign in again."
-          : message,
-        "error"
-      );
 
       if (message === "Token expired" || message === "Invalid token") {
+        setIsReconnecting(false);
+        addToast("Session expired. Please sign in again.", "error");
         logout();
         navigate("/login", { replace: true });
+        return;
       }
+
+      // Preserve reconnecting state during temporary network or server drop
+      setIsReconnecting(true);
     };
 
     const handleDisconnect = () => {
@@ -580,6 +620,7 @@ function Room() {
     socket.off("disconnect", handleDisconnect);
     socket.off("connect_error", handleConnectError);
     socket.off("receive-message", handleReceiveMessage);
+    socket.off("chat-history", handleChatHistory);
     socket.off("receive-code", handleReceiveCode);
     socket.off("receive-output", handleReceiveOutput);
     socket.off("user-joined", handleUserJoined);
@@ -591,6 +632,7 @@ function Room() {
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleConnectError);
     socket.on("receive-message", handleReceiveMessage);
+    socket.on("chat-history", handleChatHistory);
     socket.on("receive-code", handleReceiveCode);
     socket.on("receive-output", handleReceiveOutput);
     socket.on("user-joined", handleUserJoined);
@@ -606,6 +648,7 @@ function Room() {
       socket.off("disconnect", handleDisconnect);
       socket.off("connect_error", handleConnectError);
       socket.off("receive-message", handleReceiveMessage);
+      socket.off("chat-history", handleChatHistory);
       socket.off("receive-code", handleReceiveCode);
       socket.off("receive-output", handleReceiveOutput);
       socket.off("user-joined", handleUserJoined);
@@ -836,8 +879,18 @@ function Room() {
       return groups;
     }, []);
   }, [messages]);
-  const connectionLabel = isReconnecting ? "Reconnecting" : "Connected";
-  const connectionClassName = isReconnecting ? "bg-amber-500" : "bg-emerald-500";
+  const isConnected = isOnline && socketStatus === "connected" && !isReconnecting;
+  const isReconnectingState = isOnline && (isReconnecting || socketStatus === "reconnecting");
+  const connectionLabel = isConnected
+    ? "Connected"
+    : isReconnectingState
+    ? "Reconnecting"
+    : "Disconnected";
+  const connectionClassName = isConnected
+    ? "bg-emerald-500"
+    : isReconnectingState
+    ? "bg-amber-500"
+    : "bg-rose-500";
   const getParticipantStatusClassName = (status) => {
     if (status === "online") {
       return "bg-emerald-500";
@@ -916,12 +969,7 @@ function Room() {
         </div>
       </Modal>
 
-      {isReconnecting && !loading && (
-        <div className="flex items-center justify-center gap-2 bg-amber-100 px-4 py-2 text-sm font-medium text-amber-800 border-b border-amber-200">
-          <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-          Reconnecting to the collaboration server...
-        </div>
-      )}
+      <NetworkStatus />
 
       {isPageLoading ? (
         <div className="flex-1 overflow-hidden bg-slate-100 p-5">
@@ -1051,7 +1099,7 @@ function Room() {
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-                <span className={`h-2 w-2 rounded-full ${connectionClassName} ${isReconnecting ? "animate-pulse" : ""}`} />
+                <span className={`h-2 w-2 rounded-full ${connectionClassName} ${isReconnectingState ? "animate-pulse" : ""}`} />
                 {connectionLabel}
               </div>
               <Button

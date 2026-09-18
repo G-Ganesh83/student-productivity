@@ -8,6 +8,7 @@ import {
   getWeeklySummary,
   startSession,
 } from '../controllers/sessionController.js';
+import { sessionSchema, validate } from '../middleware/validateMiddleware.js';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.use(authMiddleware);
 router.get('/daily-summary', getDailySummary);
 router.get('/weekly-summary', getWeeklySummary);
 router.get('/task-insights', getTaskInsights);
-router.post('/start', startSession);
-router.post('/end', endSession);
+router.post('/start', validate(sessionSchema), startSession);
+router.post('/end', validate(sessionSchema), endSession);
 
 export default router;

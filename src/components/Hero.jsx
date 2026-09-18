@@ -1,6 +1,6 @@
+import { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import { Link } from "react-router-dom";
-import collabAnimation from "../assets/collab-animation.json";
 import FeatureCard from "./FeatureCard";
 
 function Hero({
@@ -12,6 +12,31 @@ function Hero({
   secondaryActionTo = "/login",
   secondaryActionLabel = "Join a room",
 }) {
+  const [animationData, setAnimationData] = useState(null);
+  const lottieRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    // Dynamically load the heavy Lottie animation JSON after initial mount
+    import("../assets/collab-animation.json")
+      .then((module) => {
+        if (isMounted) {
+          setAnimationData(module.default || module);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading collaboration animation:", error);
+      });
+
+    return () => {
+      isMounted = false;
+      if (lottieRef.current) {
+        lottieRef.current.destroy();
+      }
+    };
+  }, []);
+
   const ctaContainerClassName = isAuthenticated
     ? "mt-5 flex w-full flex-col gap-3 sm:mt-6 sm:flex-row sm:items-center lg:w-auto"
     : "mt-8 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center lg:w-auto";
@@ -77,8 +102,18 @@ function Hero({
               <div className="absolute left-8 top-0 hidden rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[0.68rem] font-ui font-semibold uppercase tracking-[0.22em] text-sky-600 shadow-sm md:block">
                 Focus mode
               </div>
-              <div className="relative px-0 py-4 sm:px-6 sm:py-8 lg:px-0">
-                <Lottie animationData={collabAnimation} loop className="w-full" />
+              <div className="relative px-0 py-4 sm:px-6 sm:py-8 lg:px-0 min-h-[260px] sm:min-h-[320px] flex items-center justify-center">
+                {animationData ? (
+                  <Lottie
+                    lottieRef={lottieRef}
+                    animationData={animationData}
+                    loop
+                    autoplay
+                    className="w-full"
+                  />
+                ) : (
+                  <div className="w-full aspect-[4/3] rounded-2xl bg-slate-100/60 dark:bg-slate-800/40 animate-pulse" />
+                )}
               </div>
             </div>
 
